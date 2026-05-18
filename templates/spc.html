@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}SPC控制图与过程能力分析{% endblock %}
+
+{% block extra_css %}
+<style>
+    .left-panel .card { margin-bottom: 0.5rem; }
+    .rule-scroll { max-height: 180px; overflow-y: auto; }
+    .chart-container { height: 350px; }
+    .trend-container { height: 400px; }
+    .trend-controls .btn-group, .trend-controls select { display: inline-block; vertical-align: middle; margin-right: 8px; }
+
+    /* 能力指标卡（动态背景由 JS 设置） */
+    .capability-card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: var(--shadow-sm);
+        text-align: center;
+        padding: 0.6rem 0.4rem;
+        background: #f8fafc;
+        color: var(--text);
+        transition: background-color 0.2s;
+    }
+    .capability-card .cap-label {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    .capability-card .cap-value {
+        font-weight: 700;
+        font-size: 1.1rem;
+        /* 颜色由 JS 动态控制 */
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>
+        <i class="fa fa-line-chart me-2" style="color: var(--primary);"></i>
+        SPC控制图与过程能力分析
+    </h4>
+    <div>
+        <button class="btn btn-outline-primary btn-sm me-2" id="btnHistory">
+            <i class="fa fa-history"></i> 历史记录
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" id="btnExport">
+            <i class="fa fa-download"></i> 导出图片
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 左侧参数区 -->
+    <div class="col-md-3 left-panel">
+        <div class="card">
+            <div class="card-header py-2 fw-bold"><i class="fa fa-cogs me-1" style="color: var(--primary);"></i>数据配置</div>
+            <div class="card-body py-2">
+                <div class="mb-2">
+                    <label class="form-label">CTQ</label>
+                    <select id="ctqSelect" class="form-select form-select-sm">
+                        <option value="">-- 选择CTQ --</option>
+                        {% for ctq in ctq_list %}
+                        <option value="{{ ctq.ctq_id }}" data-product-item="{{ ctq.product_item }}">{{ ctq.product_item }} - {{ ctq.ctq_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">品项（必须选择）</label>
+                    <select id="productItemSelect" class="form-select form-select-sm">
+                        <option value="">-- 请选择品项 --</option>
+                        {% for item in all_product_items %}
+                        <option value="{{ item }}">{{ item }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text text-muted small" id="productItemHint"></div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-6">
+                        <label class="form-label">起始日期</label>
+                        <input type="date" id="startDate" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">结束日期</label>
+                        <input type="date" id="endDate" class="form-control form-control-sm">
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">控制图类型</label>
+                    <select id="chartType" class="form-select form-select-sm">
+                        <option value="auto">自动选择</option>
+                        <option value="I-MR">I-MR</option>
+                        <option value="Xbar-R">Xbar-R</option>
+                        <option value="Xbar-S">Xbar-S</option>
+                    </select>
+                    <div class="form-text text-muted small">系统始终按自然批次分组</div>
+                </div>
+                <button id="loadBtn" class="btn btn-primary btn-sm w-100"><i class="fa fa-play"></i> 分析</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header py-2 fw-bold"><i class="fa fa-edit me-1" style="color: var(--primary);"></i>规格限</div>
+            <div class="card-body py-2">
+                <div class="row mb-2">
+                    <div class="col-4"><label class="form-label">USL</label><input type="number" step="any" id="uslInput" class="form-control form-control-sm"></div>
+                    <div class="col-4"><label class="form-label">LSL</label><input type="number" step="any" id="lslInput" class="form-control form-control-sm"></div>
+                    <div class="col-4"><label class="form-label">目标</label><input type="number" step="any" id="targetInput" class="form-control form-control-sm"></div>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm w-100" id="resetSpecBtn"><i class="fa fa-refresh"></i> 重置为CTQ默认值</button>
+            </div>
+        </div>
+
+        <!-- 能力指标卡片（动态变色） -->
+        <div id="capabilityCards" class="d-none">
+            <div class="row g-1">
+                <div class="col-6">
+                    <div class="capability-card">
+                        <div class="cap-label">CPK</div>
+                        <div class="cap-value" id="cpkValue">-</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="capability-card">
+                        <div class="cap-label">PPK</div>
+                        <div class="cap-value" id="ppkValue">-</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="capability-card">
+                        <div class="cap-label">CPM</div>
+                        <div class="cap-value" id="cpmValue">-</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="capability-card">
+                        <div class="cap-label">均值</div>
+                        <div class="cap-value" id="meanValue">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header py-2 d-flex justify-content-between align-items-center fw-bold">
+                <span><i class="fa fa-exclamation-triangle me-1" style="color: var(--primary);"></i>判异规则</span>
+                <button class="btn btn-sm btn-outline-secondary" id="resetRules">全选</button>
+            </div>
+            <div class="card-body py-1 rule-scroll">
+                <div class="form-check"><input class="form-check-input rule-check" type="checkbox" value="1" checked><label class="form-check-label">1. 超出3σ控制限</label></div>
+                <div class="form-check"><input class="form-check-input rule-check" type="checkbox" value="2" checked><label class="form-check-label">2. 连续9点同侧</label></div>
+                <div class="form-check"><input class="form-check-input rule-check" type="checkbox" value="3" checked><label class="form-check-label">3. 连续6点递增/递减</label></div>
+                <div class="form-check"><input class="form-check-input rule-check" type="checkbox" value="4" checked><label class="form-check-label">4. 连续14点交替</label></div>
+                <div class="form-check"><input class="form-check-input rule-check" type="checkbox" value="5" checked><label class="form-check-label">5. 连续3点中有2点在2σ外</label></div>
+                <div class="form-check"><input class="form-check-input rule-check" type="checkbox" value="6" checked><label class="form-check-label">6. 连续5点中有4点在1σ外</label></div>
+                <div class="form-check"><input class="form-check-input rule-check" type="checkbox" value="7" checked><label class="form-check-label">7. 连续15点在1σ内</label></div>
+                <div class="form-check"><input class="form-check-input rule-check" type="checkbox" value="8" checked><label class="form-check-label">8. 连续8点在1σ外</label></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧图表区 -->
+    <div class="col-md-9">
+        <div id="dataWarning" class="warning-banner" style="display: none;"></div>
+        <ul class="nav nav-tabs" id="chartTabs" role="tablist">
+            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tabControl">控制图</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabHist">过程能力</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabTrend">能力趋势</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabRecords">异常记录</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabNormality">正态检验</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="tabControl">
+                <div class="card"><div class="card-body p-2"><div id="xbarChart" class="chart-container"></div></div></div>
+                <div class="card mt-2"><div class="card-body p-2"><div id="rChart" class="chart-container" style="height:300px;"></div></div></div>
+            </div>
+            <div class="tab-pane fade" id="tabHist">
+                <div class="row">
+                    <div class="col-md-8"><div id="histogram" class="chart-container"></div></div>
+                    <div class="col-md-4" id="capabilityStatsTable"></div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="tabTrend">
+                <div class="card">
+                    <div class="card-header py-2 trend-controls">
+                        <div class="btn-group btn-group-sm me-2" role="group">
+                            <button type="button" class="btn btn-outline-primary active" data-metric="ppk">PPK</button>
+                            <button type="button" class="btn btn-outline-primary" data-metric="cpm">CPM</button>
+                        </div>
+                        <select id="trendGranularity" class="form-select form-select-sm d-inline-block" style="width: auto;">
+                            <option value="batch">按批次</option>
+                            <option value="week" selected>按周</option>
+                            <option value="month">按月</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-secondary" id="refreshTrendBtn"><i class="fa fa-refresh"></i> 刷新</button>
+                    </div>
+                    <div class="card-body p-2">
+                        <div id="trendChart" class="trend-container"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="tabRecords"><div id="alarmTableContainer" class="table-responsive small"></div></div>
+            <div class="tab-pane fade" id="tabNormality">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header py-2 fw-bold"><i class="fa fa-line-chart me-1" style="color: var(--primary);"></i>Q‑Q 图</div>
+                            <div class="card-body p-2"><div id="qqChart" class="chart-container"></div></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header py-2 fw-bold"><i class="fa fa-check-circle me-1" style="color: var(--primary);"></i>正态性检验</div>
+                            <div class="card-body p-2 small">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <tr><td>Shapiro‑Wilk W</td><td id="swStat">-</td></tr>
+                                    <tr><td>p 值</td><td id="swP">-</td></tr>
+                                    <tr><td>Anderson‑Darling A²</td><td id="adStat">-</td></tr>
+                                    <tr><td>5% 临界值</td><td id="adCrit">-</td></tr>
+                                    <tr><td>结论</td><td id="normConclusion">待分析</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 历史记录模态框 -->
+<div class="modal fade" id="historyModal" tabindex="-1">
+  <div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5>历史分析记录</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="historyTableBody"></div></div></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/spc.js') }}"></script>
+{% endblock %}

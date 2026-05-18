@@ -1,0 +1,99 @@
+/* ========== 全局基础 ========== */
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI','Microsoft YaHei','PingFang SC',sans-serif; background:#f0f2f5; color:#2c3e50; font-size:14px; line-height:1.6; }
+a { text-decoration:none; }
+
+/* ========== 导航栏 ========== */
+.navbar-brand { font-size:1.3rem; font-weight:700; letter-spacing:0.5px; }
+.navbar-dark .navbar-nav .nav-link { color:rgba(255,255,255,0.85); padding:8px 15px; border-radius:6px; margin:0 2px; transition:all 0.2s ease; }
+.navbar-dark .navbar-nav .nav-link:hover, .navbar-dark .navbar-nav .nav-link.active { color:#fff; background:rgba(255,255,255,0.15); }
+
+/* ========== 卡片 ========== */
+.card { border:none; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.04); transition:none; background:#fff; }
+.card:hover { box-shadow:0 8px 25px rgba(0,0,0,0.08); transform:none; }
+.card-header { background:#fff; border-bottom:1px solid #f0f0f0; border-radius:12px 12px 0 0!important; font-weight:600; font-size:.95rem; padding:14px 20px; color:#2c3e50; }
+.card-body { padding:20px; }
+
+/* ========== KPI 卡片 ========== */
+.kpi-card { border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); color:#fff; background:#6c757d; }
+.kpi-card .card-body { padding:20px; }
+.kpi-card .kpi-value { font-size:2rem; font-weight:700; margin-bottom:5px; color:#fff; }
+.kpi-card .kpi-label { font-size:.85rem; opacity:.9; font-weight:500; color:#fff; }
+.kpi-card.success { background:#198754; }
+.kpi-card.warning { background:#ffc107; color:#212529; }
+.kpi-card.warning .kpi-value, .kpi-card.warning .kpi-label { color:#212529; }
+.kpi-card.danger { background:#dc3545; }
+
+/* ========== 表格 ========== */
+.table { margin-bottom:0; font-size:.9rem; }
+.table th { font-weight:600; background:#f8f9fa; border-bottom:2px solid #dee2e6; white-space:nowrap; color:#495057; }
+.table td { vertical-align:middle; padding:10px 12px; }
+.table-hover tbody tr:hover { background:#f0f8ff; }
+.sticky-top { position:sticky; top:0; z-index:10; }
+
+/* ========== 按钮 ========== */
+.btn { border-radius:8px; font-weight:500; padding:8px 18px; transition:all 0.2s ease; }
+.btn-primary { background:#3498db; border-color:#3498db; }
+.btn-primary:hover { background:#2980b9; border-color:#2980b9; transform:translateY(-1px); box-shadow:0 4px 10px rgba(52,152,219,0.3); }
+.btn-outline-primary { border-color:#3498db; color:#3498db; }
+.btn-outline-primary:hover { background:#3498db; color:#fff; }
+.btn-outline-danger:hover { background:#e74c3c; color:#fff; }
+
+/* ========== 表单 ========== */
+.form-control:focus, .form-select:focus { border-color:#3498db; box-shadow:0 0 0 .2rem rgba(52,152,219,.2); }
+.form-label { font-weight:500; color:#2c3e50; margin-bottom:4px; }
+.form-check-input:checked { background-color:#3498db; border-color:#3498db; }
+
+/* ========== 警告框 ========== */
+.alert { border-radius:8px; border:none; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
+
+/* ========== 工具类 ========== */
+.page-title { font-weight:700; color:#2c3e50; font-size:1.6rem; }
+.page-desc { color:#7f8c8d; font-size:.95rem; }
+.badge { font-weight:500; padding:5px 10px; border-radius:6px; }
+
+@media (max-width:768px) {
+  .kpi-card .kpi-value { font-size:1.6rem; }
+  .container-fluid { padding-left:10px; padding-right:10px; }
+}
+.chart-container {
+    height: 320px;
+    width: 100%;
+}
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* ===== 三重锁定：消灭模态框闪烁 ===== */
+
+/* 1. 禁用所有模态框的过渡和动画 */
+.modal,
+.modal *,
+.modal-dialog,
+.modal-content,
+.modal-header,
+.modal-body,
+.modal-footer,
+.modal-backdrop {
+    transition: none !important;
+    animation: none !important;
+    animation-duration: 0s !important;
+    transition-duration: 0s !important;
+}
+
+/* 2. 禁用模态框内卡片的悬停效果 */
+.modal .card,
+.modal .card:hover {
+    transform: none !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+    transition: none !important;
+}
+
+/* 3. 强制模态框内容不随鼠标移动重绘 */
+.modal-open .modal {
+    will-change: auto !important;
+}
+.modal-dialog {
+    transform: none !important;
+}

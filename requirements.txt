@@ -1,0 +1,36 @@
+yogurt_qlf/
+├── app.py
+├── config.py
+├── models/
+│   ├── __init__.py
+│   ├── database.py
+│   └── models.py
+├── routes/
+│   ├── __init__.py
+│   ├── dashboard.py
+│   ├── ctq_manage.py
+│   ├── production_data.py
+│   ├── k_value_calc.py
+│   ├── target_calc.py
+│   ├── loss_analysis.py
+│   └── improvement.py
+├── services/
+│   ├── __init__.py
+│   ├── taguchi_qlf.py
+│   ├── target_calc.py
+│   └── excel_service.py
+├── static/
+│   ├── css/
+│   │   └── main.css
+│   └── js/
+│       └── main.js
+├── templates/
+│   ├── base.html
+│   ├── dashboard.html
+│   ├── ctq_manage.html
+│   ├── production_data.html
+│   ├── k_value_calc.html
+│   ├── target_calc.html
+│   ├── loss_analysis.html
+│   └── improvement.html
+└── requirements.txt

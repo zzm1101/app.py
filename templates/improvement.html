@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}改进优先级与方案 - 酸奶工厂田口QLF质量损失系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1" style="font-size: 1.6rem; color: var(--text);">
+            <i class="fa fa-tasks me-2" style="color: var(--primary);"></i>改进优先级与方案
+        </h2>
+        <p class="mb-0" style="font-size: 0.9rem; color: var(--text-muted);">
+            基于损失、FMEA严重度、过程能力的智能改进建议 —— 表格支持排序
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('improvement.export_report') }}" class="btn btn-primary">
+            <i class="fa fa-file-excel-o me-2"></i>导出改进方案报告
+        </a>
+    </div>
+</div>
+
+<!-- KPI 卡片（新版渐变色 + 图标） -->
+<div class="row mb-4">
+    <div class="col-xl-4 col-lg-4 col-md-6 mb-3">
+        <div class="card kpi-card kpi-danger">
+            <div class="card-body">
+                <i class="fa fa-money kpi-icon"></i>
+                <div class="kpi-value">¥{{ "%.2f"|format(total_loss) }}</div>
+                <div class="kpi-label">累计总质量损失（含隐性）</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-lg-4 col-md-6 mb-3">
+        <div class="card kpi-card {% if compliance_rate >= 99.5 %}kpi-success{% elif compliance_rate >= 99 %}kpi-warning{% else %}kpi-danger{% endif %}">
+            <div class="card-body">
+                <i class="fa fa-check-circle kpi-icon"></i>
+                <div class="kpi-value">{{ "%.2f"|format(compliance_rate) }}%</div>
+                <div class="kpi-label">国标合规率</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-lg-4 col-md-6 mb-3">
+        <div class="card kpi-card kpi-info">
+            <div class="card-body">
+                <i class="fa fa-cogs kpi-icon"></i>
+                <div class="kpi-value">{{ priority_list|length }}</div>
+                <div class="kpi-label">CTQ改进项数量</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if priority_list %}
+<!-- 改进优先级矩阵 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="mb-0 fw-bold"><i class="fa fa-table me-2" style="color: var(--primary);"></i>改进优先级矩阵</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered" id="improveTable">
+                <thead>
+                    <tr>
+                        <th>CTQ名称</th>
+                        <th>生产环节</th>
+                        <th>是否CCP</th>
+                        <th>总损失(元)</th>
+                        <th>FMEA严重度</th>
+                        <th>Ppk</th>
+                        <th>优先级评分</th>
+                        <th>优先级等级</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in priority_list %}
+                    <tr class="{% if item.priority_level == '极高优先级' %}table-danger{% elif item.priority_level == '高优先级' %}table-warning{% elif item.priority_level == '中优先级' %}table-primary{% endif %}">
+                        <td><strong>{{ item.ctq_name }}</strong></td>
+                        <td>{{ item.process_link }}</td>
+                        <td>
+                            {% if item.is_ccp == '是' %}
+                                <span class="badge bg-danger">CCP</span>
+                            {% else %}
+                                <span class="badge bg-secondary">否</span>
+                            {% endif %}
+                        </td>
+                        <td data-order="{{ item.total_loss }}">{{ "%.2f"|format(item.total_loss) }}</td>
+                        <td data-order="{{ item.fmea_severity }}">{{ item.fmea_severity }}</td>
+                        <td data-order="{{ item.cpk if item.cpk != '-' else 0 }}">
+                            <span class="fw-bold">{{ item.cpk }}</span>
+                        </td>
+                        <td data-order="{{ item.priority_score }}">{{ item.priority_score }}</td>
+                        <td>
+                            <span class="badge bg-{{ item.level_class }}">{{ item.priority_level }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 智能改进建议 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0 fw-bold"><i class="fa fa-lightbulb-o me-2" style="color: var(--primary);"></i>智能改进建议</h6>
+            </div>
+            <div class="card-body">
+                {% if suggestions %}
+                    <div class="row">
+                        {% for s in suggestions %}
+                        <div class="col-lg-6 mb-3">
+                            <div class="card border-1 h-100">
+                                <div class="card-header bg-light">
+                                    <strong>{{ s.title }}</strong>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-0">{{ s.content }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="fa fa-info-circle fa-3x mb-3" style="color: var(--primary);"></i>
+                        <p>暂无改进建议，请先执行损失计算</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fa fa-bar-chart fa-4x mb-3" style="color: var(--primary);"></i>
+        <h4>暂无改进数据</h4>
+        <p>请先在生产数据管理页面导入数据，并在损失分析页面执行计算。</p>
+        <a href="{{ url_for('loss.loss_analysis') }}" class="btn btn-primary">前往损失分析</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    initDataTable('#improveTable', {
+        pageLength: 25,
+        order: [[6, 'desc']],
+        columnDefs: [
+            { orderable: false, targets: [1, 2, 7] }
+        ]
+    });
+});
+</script>
+{% endblock %}

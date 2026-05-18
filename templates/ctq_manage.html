@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+{% block title %}CTQ关键特性管理 - 酸奶工厂田口QLF质量损失系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1" style="font-size: 1.6rem; color: var(--text);">
+            <i class="fa fa-cogs me-2" style="color: var(--primary);"></i>CTQ关键特性管理
+        </h2>
+        <p class="mb-0" style="font-size: 0.9rem; color: var(--text-muted);">
+            基于HACCP、国标、FMEA的核心质量特性配置 —— 支持搜索与排序
+        </p>
+    </div>
+    <div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCtqModal">
+            <i class="fa fa-plus me-2"></i>新增CTQ
+        </button>
+        <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#uploadModal">
+            <i class="fa fa-upload me-2"></i>批量导入
+        </button>
+        <a href="{{ url_for('ctq.download_template') }}" class="btn btn-outline-success">
+            <i class="fa fa-download me-2"></i>下载模板
+        </a>
+        <form method="POST" action="{{ url_for('ctq.ctq_reset') }}" class="d-inline" onsubmit="return confirm('确定重置为默认配置？\n\n警告：此操作将清空所有自定义CTQ配置！')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-secondary">
+                <i class="fa fa-refresh me-2"></i>重置默认
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- KPI 卡片 -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-lg-3 col-md-6 mb-3">
+        <div class="card kpi-card kpi-secondary">
+            <div class="card-body">
+                <i class="fa fa-cubes kpi-icon"></i>
+                <div class="kpi-value">{{ ctq_list|length }}</div>
+                <div class="kpi-label">总CTQ数量</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-3 col-md-6 mb-3">
+        <div class="card kpi-card kpi-success">
+            <div class="card-body">
+                <i class="fa fa-check-circle kpi-icon"></i>
+                <div class="kpi-value">{{ enable_count }}</div>
+                <div class="kpi-label">启用CTQ数量</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-3 col-md-6 mb-3">
+        <div class="card kpi-card kpi-danger">
+            <div class="card-body">
+                <i class="fa fa-exclamation-triangle kpi-icon"></i>
+                <div class="kpi-value">{{ ccp_count }}</div>
+                <div class="kpi-label">CCP关键控制点</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-3 col-md-6 mb-3">
+        <div class="card kpi-card kpi-warning">
+            <div class="card-body">
+                <i class="fa fa-shield kpi-icon"></i>
+                <div class="kpi-value">{{ high_risk_count }}</div>
+                <div class="kpi-label">高风险CTQ数量</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CTQ列表表格 -->
+<div class="card">
+    <div class="card-body">
+        {% if ctq_list %}
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered" id="ctqTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>品项</th>
+                        <th>CTQ名称</th>
+                        <th>特性类型</th>
+                        <th>生产环节</th>
+                        <th>CCP</th>
+                        <th>严重度</th>
+                        <th>国标</th>
+                        <th>目标值</th>
+                        <th>规格限</th>
+                        <th>非对称</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for ctq in ctq_list %}
+                <tr>
+                    <td>{{ ctq.ctq_id }}</td>
+                    <td>{% if ctq.product_item %}{{ ctq.product_item }}{% else %}<span class="text-muted">通用</span>{% endif %}</td>
+                    <td><strong>{{ ctq.ctq_name }}</strong></td>
+                    <td>{{ feature_type[ctq.feature_type].name }}</td>
+                    <td>{{ ctq.process_link }}</td>
+                    <td>{% if ctq.is_ccp == "是" %}<span class="badge bg-danger">是</span>{% else %}<span class="badge bg-secondary">否</span>{% endif %}</td>
+                    <td><span class="badge {% if ctq.fmea_severity >= 8 %}bg-danger{% elif ctq.fmea_severity >= 6 %}bg-warning{% else %}bg-success{% endif %}">{{ ctq.fmea_severity }}级</span></td>
+                    <td>{{ ctq.gb_code }}</td>
+                    <td>{{ ctq.target_m }}</td>
+                    <td>{{ ctq.lsl }} ~ {{ ctq.usl }}</td>
+                    <td>{% if ctq.asymmetric_loss == "是" %}是{% else %}否{% endif %}</td>
+                    <td>{% if ctq.status == "启用" %}<span class="badge bg-success">启用</span>{% else %}<span class="badge bg-secondary">停用</span>{% endif %}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editCtqModal{{ ctq.ctq_id }}">编辑</button>
+                        <form method="POST" action="{{ url_for('ctq.ctq_delete', ctq_id=ctq.ctq_id) }}" class="d-inline" onsubmit="return confirm('删除不可恢复，确认？')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">删除</button>
+                        </form>
+                        <button class="btn btn-sm btn-outline-info influence-link"
+                                onclick="window.open('/influence/analysis?ctq_id={{ ctq.ctq_id }}&product_item={{ ctq.product_item or '' }}', '_blank')">
+                            影响因素
+                        </button>
+                    </td>
+                </tr>
+                <!-- 编辑模态框 -->
+                <div class="modal fade" id="editCtqModal{{ ctq.ctq_id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">编辑CTQ - {{ ctq.ctq_name }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <form action="{{ url_for('ctq.ctq_edit', ctq_id=ctq.ctq_id) }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div class="modal-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">品项</label>
+                                            <select class="form-select" name="product_item">
+                                                <option value="">通用</option>
+                                                {% for item in product_items %}
+                                                <option value="{{ item }}" {% if ctq.product_item == item %}selected{% endif %}>{{ item }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">CTQ名称</label>
+                                            <input type="text" class="form-control" name="ctq_name" value="{{ ctq.ctq_name }}" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">特性类型</label>
+                                            <select class="form-select" name="feature_type" required>
+                                                {% for key,val in feature_type.items() %}
+                                                <option value="{{ key }}" {% if ctq.feature_type == key %}selected{% endif %}>{{ val.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">生产环节</label>
+                                            <input type="text" class="form-control" name="process_link" value="{{ ctq.process_link }}">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">是否CCP</label>
+                                            <select class="form-select" name="is_ccp">
+                                                <option value="是" {% if ctq.is_ccp == "是" %}selected{% endif %}>是</option>
+                                                <option value="否" {% if ctq.is_ccp == "否" %}selected{% endif %}>否</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">FMEA严重度</label>
+                                            <select class="form-select" name="fmea_severity">
+                                                {% for k,v in fmea_config.items() %}
+                                                <option value="{{ k }}" {% if ctq.fmea_severity == k %}selected{% endif %}>{{ k }}级 - {{ v.risk_level }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">执行国标</label>
+                                            <input type="text" class="form-control" name="gb_code" value="{{ ctq.gb_code }}">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">目标值m</label>
+                                            <input type="number" step="any" class="form-control target_m" name="target_m" value="{{ ctq.target_m }}" required>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">USL</label>
+                                            <input type="number" step="any" class="form-control usl" name="usl" value="{{ ctq.usl }}" required>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">LSL</label>
+                                            <input type="number" step="any" class="form-control lsl" name="lsl" value="{{ ctq.lsl }}" required>
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label class="form-label">Δ0</label>
+                                            <input type="number" step="any" class="form-control" name="delta0" value="{{ ctq.delta0 }}">
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label class="form-label">Δ</label>
+                                            <input type="number" step="any" class="form-control" name="delta" value="{{ ctq.delta }}">
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label class="form-label">A0(元)</label>
+                                            <input type="number" step="any" class="form-control" name="a0" value="{{ ctq.a0 }}">
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label class="form-label">A(元)</label>
+                                            <input type="number" step="any" class="form-control" name="a" value="{{ ctq.a }}">
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label class="form-label">非对称损失</label>
+                                            <select class="form-select asymmetric_select" name="asymmetric_loss">
+                                                <option value="否" {% if ctq.asymmetric_loss == "否" %}selected{% endif %}>否</option>
+                                                <option value="是" {% if ctq.asymmetric_loss == "是" %}selected{% endif %}>是</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label class="form-label">K_upper</label>
+                                            <input type="number" step="any" class="form-control" name="k_upper" value="{{ ctq.k_upper }}">
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label class="form-label">K_lower</label>
+                                            <input type="number" step="any" class="form-control" name="k_lower" value="{{ ctq.k_lower }}">
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label class="form-label">隐性损失系数</label>
+                                            <input type="number" step="any" class="form-control" name="hidden_loss_coef" value="{{ ctq.hidden_loss_coef }}">
+                                        </div>
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">状态</label>
+                                            <select class="form-select" name="status">
+                                                <option value="启用" {% if ctq.status == "启用" %}selected{% endif %}>启用</option>
+                                                <option value="停用" {% if ctq.status == "停用" %}selected{% endif %}>停用</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div id="asymmetric_fields_{{ ctq.ctq_id }}" class="border-top pt-3 mt-2" style="display: {{ 'block' if ctq.asymmetric_loss == '是' else 'none' }};">
+                                        <h6 class="mb-2">非对称专属参数</h6>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">超出上限的损失 A_upper(元)</label>
+                                                <input type="number" step="any" class="form-control" name="a_upper" value="{{ ctq.a_upper }}">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">低于下限的损失 A_lower(元)</label>
+                                                <input type="number" step="any" class="form-control" name="a_lower" value="{{ ctq.a_lower }}">
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">超出上限的功能界限 ΔU (自动计算)</label>
+                                                <input type="text" class="form-control deltaU" readonly value="{{ (ctq.usl - ctq.target_m)|round(4) if ctq.usl and ctq.target_m else '' }}">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">低于下限的功能界限 ΔL (自动计算)</label>
+                                                <input type="text" class="form-control deltaL" readonly value="{{ (ctq.target_m - ctq.lsl)|round(4) if ctq.target_m and ctq.lsl else '' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                    <button type="submit" class="btn btn-primary">保存修改</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fa fa-cogs fa-3x mb-3" style="color: var(--primary);"></i>
+            <h5>暂无CTQ配置</h5>
+            <p class="text-muted">请点击「新增CTQ」或「下载模板」批量导入</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 新增CTQ模态框（完整） -->
+<div class="modal fade" id="addCtqModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新增CTQ配置</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('ctq.ctq_add') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">品项</label>
+                            <select class="form-select" name="product_item">
+                                <option value="">通用</option>
+                                {% for item in product_items %}
+                                <option value="{{ item }}">{{ item }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">CTQ名称</label>
+                            <input type="text" class="form-control" name="ctq_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">特性类型</label>
+                            <select class="form-select" name="feature_type" required>
+                                {% for key,val in feature_type.items() %}
+                                <option value="{{ key }}">{{ val.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">生产环节</label>
+                            <input type="text" class="form-control" name="process_link">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">是否CCP</label>
+                            <select class="form-select" name="is_ccp">
+                                <option value="否">否</option>
+                                <option value="是">是</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">FMEA严重度</label>
+                            <select class="form-select" name="fmea_severity">
+                                {% for k,v in fmea_config.items() %}
+                                <option value="{{ k }}">{{ k }}级 - {{ v.risk_level }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">执行国标</label>
+                            <input type="text" class="form-control" name="gb_code">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">目标值m</label>
+                            <input type="number" step="any" class="form-control target_m" name="target_m" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">USL</label>
+                            <input type="number" step="any" class="form-control usl" name="usl" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">LSL</label>
+                            <input type="number" step="any" class="form-control lsl" name="lsl" required>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Δ0</label>
+                            <input type="number" step="any" class="form-control" name="delta0" value="0">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Δ</label>
+                            <input type="number" step="any" class="form-control" name="delta" value="0">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">A0(元)</label>
+                            <input type="number" step="any" class="form-control" name="a0" value="0">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">A(元)</label>
+                            <input type="number" step="any" class="form-control" name="a" value="0">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">非对称损失</label>
+                            <select class="form-select asymmetric_select" name="asymmetric_loss">
+                                <option value="否">否</option>
+                                <option value="是">是</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">K_upper</label>
+                            <input type="number" step="any" class="form-control" name="k_upper" value="0">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">K_lower</label>
+                            <input type="number" step="any" class="form-control" name="k_lower" value="0">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">隐性损失系数</label>
+                            <input type="number" step="any" class="form-control" name="hidden_loss_coef" value="1.0">
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">状态</label>
+                            <select class="form-select" name="status">
+                                <option value="启用">启用</option>
+                                <option value="停用">停用</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="asymmetric_fields_add" class="border-top pt-3 mt-2" style="display:none;">
+                        <h6 class="mb-2">非对称专属参数</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">超出上限的损失 A_upper(元)</label>
+                                <input type="number" step="any" class="form-control" name="a_upper" value="0">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">低于下限的损失 A_lower(元)</label>
+                                <input type="number" step="any" class="form-control" name="a_lower" value="0">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">超出上限的功能界限 ΔU (自动计算)</label>
+                                <input type="text" class="form-control deltaU" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">低于下限的功能界限 ΔL (自动计算)</label>
+                                <input type="text" class="form-control deltaL" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">新增CTQ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 批量导入模态框（完整） -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">批量导入CTQ配置</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('ctq.upload_ctq') }}" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <p>请先<a href="{{ url_for('ctq.download_template') }}" target="_blank">下载CTQ配置模板</a>，按格式填写后上传。</p>
+                    <p class="text-muted small">上传时会自动覆盖已存在的（品项+CTQ名称）组合，不存在的将新增。</p>
+                    <input type="file" class="form-control" name="excel_file" accept=".xlsx" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">上传导入</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    var table = initDataTable('#ctqTable', {
+        pageLength: 25,
+        order: [[0, 'asc']],
+        columnDefs: [{ orderable: false, targets: [-1] }]
+    });
+
+    $(document).on('change', '.asymmetric_select', function() {
+        var modal = $(this).closest('.modal');
+        var fields = modal.find('[id^="asymmetric_fields_"]');
+        if (fields.length) {
+            if ($(this).val() === '是') {
+                fields.slideDown(200);
+            } else {
+                fields.slideUp(200);
+            }
+        }
+    });
+
+    function updateDeltaFields(modal) {
+        var m = parseFloat(modal.find('input[name="target_m"]').val()) || 0;
+        var usl = parseFloat(modal.find('input[name="usl"]').val()) || 0;
+        var lsl = parseFloat(modal.find('input[name="lsl"]').val()) || 0;
+        var deltaUField = modal.find('.deltaU');
+        var deltaLField = modal.find('.deltaL');
+        if (deltaUField.length) deltaUField.val((usl - m).toFixed(4));
+        if (deltaLField.length) deltaLField.val((m - lsl).toFixed(4));
+    }
+
+    $(document).on('input', '.modal input[name="target_m"], .modal input[name="usl"], .modal input[name="lsl"]', function() {
+        updateDeltaFields($(this).closest('.modal'));
+    });
+
+    $('[id^="editCtqModal"]').on('shown.bs.modal', function() {
+        updateDeltaFields($(this));
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+{% block title %}质量损失分析 - 酸奶工厂田口QLF质量损失系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1" style="font-size: 1.6rem; color: var(--text);">
+            <i class="fa fa-pie-chart me-2" style="color: var(--primary);"></i>质量损失分析
+        </h2>
+        <p class="mb-0" style="font-size: 0.9rem; color: var(--text-muted);">
+            全量批次质量损失（积分法）· 多维度可视化 · SPC预警
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <form method="POST" action="{{ url_for('loss.clear_result') }}" class="d-inline" onsubmit="return confirm('确定清空所有分析结果？')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-danger">
+                <i class="fa fa-trash me-2"></i>清空结果
+            </button>
+        </form>
+        <a href="{{ url_for('loss.export_excel_data') }}" class="btn btn-outline-primary">
+            <i class="fa fa-download me-2"></i>导出结果
+        </a>
+        <button id="calc_btn" class="btn btn-primary">
+            <i class="fa fa-refresh me-2"></i>执行损失计算
+        </button>
+    </div>
+</div>
+
+<!-- 标准差来源选择 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex align-items-center gap-3">
+            <span class="fw-bold"><i class="fa fa-cogs me-1" style="color: var(--primary);"></i>标准差来源：</span>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="stdSource" id="stdBatch" value="false" {% if request.args.get('pooled') != 'true' %}checked{% endif %}>
+                <label class="form-check-label" for="stdBatch">
+                    <i class="fa fa-file-text-o me-1"></i>本批样本标准差
+                    <small class="text-muted">（批次内样品波动）</small>
+                </label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="stdSource" id="stdPooled" value="true" {% if request.args.get('pooled') == 'true' %}checked{% endif %}>
+                <label class="form-check-label" for="stdPooled">
+                    <i class="fa fa-database me-1"></i>长期合并标准差（按品项+CTQ）
+                    <small class="text-muted">（基于所有历史批次组内波动）</small>
+                </label>
+            </div>
+            <small class="text-info ms-auto"><i class="fa fa-info-circle"></i> 推荐使用合并标准差，可获得稳定评估</small>
+        </div>
+    </div>
+</div>
+
+<!-- SPC 异常预警 -->
+{% if spc_alerts %}
+<div class="alert alert-warning mb-4" style="border-radius: 10px; border: none;">
+    <h5 class="alert-heading"><i class="fa fa-exclamation-triangle me-2" style="color: #f59e0b;"></i>过程异常预警</h5>
+    <ul class="mb-0">
+        {% for alert in spc_alerts %}
+        <li>{{ alert }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- 品项和CTQ筛选 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <label class="form-label fw-bold"><i class="fa fa-filter me-1" style="color: var(--primary);"></i>品项筛选</label>
+                <select class="form-select" id="itemFilter" onchange="applyFilters()">
+                    <option value="">全部品项</option>
+                    {% for item in item_labels %}
+                    <option value="{{ item }}" {% if request.args.get('item') == item %}selected{% endif %}>{{ item }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold"><i class="fa fa-filter me-1" style="color: var(--primary);"></i>CTQ筛选</label>
+                <select class="form-select" id="ctqFilter" onchange="applyFilters()">
+                    <option value="">全部CTQ</option>
+                    {% for ctq_name in ctq_names_list %}
+                    <option value="{{ ctq_name }}" {% if request.args.get('ctq') == ctq_name %}selected{% endif %}>{{ ctq_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-outline-secondary" onclick="clearAllFilters()">
+                    <i class="fa fa-times me-1"></i>清除所有筛选
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KPI 卡片（新版渐变色 + 图标） -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-lg-3 col-md-6 mb-3">
+        <div class="card kpi-card kpi-danger">
+            <div class="card-body">
+                <i class="fa fa-money kpi-icon"></i>
+                <div class="kpi-value">¥{{ "%.2f"|format(total_visible_loss) }}</div>
+                <div class="kpi-label">总显性质量损失</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-3 col-md-6 mb-3">
+        <div class="card kpi-card kpi-warning">
+            <div class="card-body">
+                <i class="fa fa-eye-slash kpi-icon"></i>
+                <div class="kpi-value">¥{{ "%.2f"|format(total_hidden_loss) }}</div>
+                <div class="kpi-label">总隐性质量损失</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-3 col-md-6 mb-3">
+        <div class="card kpi-card {% if compliance_rate >= 99.5 %}kpi-success{% elif compliance_rate >= 99 %}kpi-warning{% else %}kpi-danger{% endif %}">
+            <div class="card-body">
+                <i class="fa fa-check-circle kpi-icon"></i>
+                <div class="kpi-value">{{ "%.2f"|format(compliance_rate) }}%</div>
+                <div class="kpi-label">国标合规率</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-3 col-md-6 mb-3">
+        <div class="card kpi-card kpi-info">
+            <div class="card-body">
+                <i class="fa fa-calculator kpi-icon"></i>
+                <div class="kpi-value">¥{{ "%.6f"|format(avg_unit_loss) }}</div>
+                <div class="kpi-label">平均期望单位损失(元)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图表区域 -->
+<div class="row mb-4">
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0 fw-bold"><i class="fa fa-pie-chart me-2" style="color: #ef4444;"></i>各CTQ损失占比</h6></div>
+            <div class="card-body"><div id="ctqChart" style="height:300px;"></div></div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0 fw-bold"><i class="fa fa-line-chart me-2" style="color: #8b5cf6;"></i>周损失趋势</h6></div>
+            <div class="card-body"><div id="weekChart" style="height:300px;"></div></div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0 fw-bold"><i class="fa fa-bar-chart me-2" style="color: #3b82f6;"></i>过程能力 (PPK)</h6></div>
+            <div class="card-body"><div id="cpkChart" style="height:300px;"></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- 过程能力分析表 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="mb-0 fw-bold"><i class="fa fa-table me-2" style="color: var(--primary);"></i>CTQ过程能力分析（按品项，基于原始数据）</h6>
+    </div>
+    <div class="card-body">
+        {% if capability_list %}
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered" id="capabilityTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>品项</th><th>CTQ名称</th><th>PPK</th><th>CPM</th><th>数据批次</th><th>能力等级</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for item in capability_list %}
+                <tr>
+                    <td>{{ item.product_item }}</td>
+                    <td><strong>{{ item.ctq_name }}</strong></td>
+                    <td data-order="{{ item.ppk if item.ppk != '-' else 0 }}">
+                        {% if item.ppk != '-' %}
+                        <span class="fw-bold {% if item.ppk >= 1.67 %}text-success{% elif item.ppk >= 1.33 %}text-primary{% elif item.ppk >= 1.0 %}text-warning{% else %}text-danger{% endif %}">{{ item.ppk }}</span>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td data-order="{{ item.cpm if item.cpm != '-' else 0 }}">{{ item.cpm if item.cpm != '-' else '-' }}</td>
+                    <td>{{ item.data_count }}</td>
+                    <td>
+                        {% if item.ppk != '-' %}
+                            {% if item.ppk >= 1.67 %}<span class="badge bg-success">特级</span>{% elif item.ppk >= 1.33 %}<span class="badge bg-primary">一级</span>{% elif item.ppk >= 1.0 %}<span class="badge bg-warning">二级</span>{% else %}<span class="badge bg-danger">三级</span>{% endif %}
+                        {% else %}<span class="badge bg-secondary">暂无</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted"><p>暂无过程能力数据，请先执行损失计算</p></div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 损失明细表 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold"><i class="fa fa-list me-2" style="color: var(--primary);"></i>损失明细（按批次×CTQ）</h6>
+        <small class="text-muted">服务端分页，支持大数据量</small>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered table-sm" id="lossTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>批次号</th><th>品项</th><th>CTQ</th><th>样本均值</th><th>标准差</th>
+                        <th>样本数</th><th>标准差来源</th><th>期望单位损失(元)</th><th>批次总损失(元)</th><th>合规</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var ctqData = {{ ctq_loss_data|tojson }};
+var weeks = {{ trend_weeks|tojson }};
+var weekLoss = {{ trend_losses|tojson }};
+var capData = {{ capability_list|tojson }};
+
+$(document).ready(function() {
+    // 损失明细表服务端分页
+    var lossTable = $('#lossTable').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: "{{ url_for('loss.api_loss_data') }}",
+            type: 'GET',
+            dataSrc: 'data'
+        },
+        columns: [
+            { data: 'batch_no' },
+            { data: 'product_item' },
+            { data: 'ctq_name' },
+            { data: 'measured_value_mean' },
+            { data: 'measured_value_std' },
+            { data: 'sample_count' },
+            { data: 'std_source' },
+            { data: 'unit_expected_loss' },
+            { data: 'batch_total_loss' },
+            { data: 'is_gb_compliant' }
+        ],
+        order: [[0, 'desc']],
+        pageLength: 25,
+        language: {
+            sSearch: "搜索：",
+            sLengthMenu: "显示 _MENU_ 项",
+            oPaginate: { sFirst: "首页", sPrevious: "上页", sNext: "下页", sLast: "末页" }
+        },
+        columnDefs: [
+            { orderable: false, targets: [6, 9] },
+            {
+                targets: 9,
+                render: function(data) {
+                    return data === '是' ? '<span class="badge bg-success">合规</span>' : '<span class="badge bg-danger">不合规</span>';
+                }
+            }
+        ]
+    });
+
+    // 过程能力表
+    var capTable = initDataTable('#capabilityTable', {
+        pageLength: 25,
+        order: [[2, 'desc']],
+        columnDefs: [{ type: 'num', targets: [2, 3] }]
+    });
+
+    // 图表绘制（统一紫色/协调色）
+    if (ctqData && ctqData.length > 0) {
+        var ctqChart = echarts.init(document.getElementById('ctqChart'));
+        ctqChart.setOption({
+            color: ['#6366f1','#8b5cf6','#a78bfa','#3b82f6','#06b6d4','#10b981','#f59e0b','#ef4444'],
+            tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
+            series: [{
+                type: 'pie',
+                radius: ['40%', '70%'],
+                data: ctqData,
+                label: { show: true, formatter: '{b}: {d}%' },
+                itemStyle: { borderRadius: 6 }
+            }]
+        });
+        $(window).on('resize', function() { ctqChart.resize(); });
+    }
+
+    if (weeks && weeks.length > 0) {
+        var weekChart = echarts.init(document.getElementById('weekChart'));
+        weekChart.setOption({
+            color: ['#8b5cf6'],
+            tooltip: { trigger: 'axis' },
+            grid: { containLabel: true },
+            xAxis: { type: 'category', data: weeks },
+            yAxis: { type: 'value', name: '损失(元)' },
+            series: [{ type: 'line', data: weekLoss, smooth: true, lineStyle: { color: '#8b5cf6' }, itemStyle: { color: '#8b5cf6' } }]
+        });
+        $(window).on('resize', function() { weekChart.resize(); });
+    }
+
+    if (capData && capData.length > 0) {
+        var cpkChart = echarts.init(document.getElementById('cpkChart'));
+        var names = capData.map(function(d) { return d.product_item + '-' + d.ctq_name; });
+        var ppks = capData.map(function(d) { return d.ppk == '-' ? 0 : parseFloat(d.ppk); });
+        cpkChart.setOption({
+            tooltip: { trigger: 'axis' },
+            grid: { containLabel: true },
+            xAxis: { type: 'category', data: names, axisLabel: { rotate: 20, interval: 0 } },
+            yAxis: { type: 'value', name: 'PPK' },
+            series: [{
+                type: 'bar',
+                barWidth: '60%',
+                data: ppks.map(function(v) {
+                    return {
+                        value: v,
+                        itemStyle: { color: v >= 1.33 ? '#10b981' : (v >= 1.0 ? '#f59e0b' : '#ef4444') }
+                    };
+                })
+            }]
+        });
+        $(window).on('resize', function() { cpkChart.resize(); });
+    }
+
+    // 损失计算按钮
+    $('#calc_btn').click(function() {
+        var pooled = $('input[name="stdSource"]:checked').val();
+        var btn = $(this);
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-2"></i>计算中...');
+        var redirectUrl = "{{ url_for('loss.loss_analysis') }}?pooled=" + pooled;
+        $.ajax({
+            url: "{{ url_for('loss.calc_loss') }}?pooled=" + pooled,
+            type: "POST",
+            success: function(res) {
+                if (res.code === 200) {
+                    alert(res.msg);
+                    window.location.href = redirectUrl;
+                } else {
+                    alert(res.msg);
+                }
+            },
+            error: function() { alert('请求失败，请检查网络'); },
+            complete: function() { btn.prop('disabled', false).html('<i class="fa fa-refresh me-2"></i>执行损失计算'); }
+        });
+    });
+});
+
+function applyFilters() {
+    var item = $('#itemFilter').val();
+    var ctq = $('#ctqFilter').val();
+    var pooled = $('input[name="stdSource"]:checked').val();
+    var url = "{{ url_for('loss.loss_analysis') }}";
+    var params = [];
+    if (item) params.push('item=' + encodeURIComponent(item));
+    if (ctq) params.push('ctq=' + encodeURIComponent(ctq));
+    if (pooled === 'true') params.push('pooled=true');
+    if (params.length > 0) url += '?' + params.join('&');
+    window.location.href = url;
+}
+
+function clearAllFilters() {
+    var pooled = $('input[name="stdSource"]:checked').val();
+    var url = "{{ url_for('loss.loss_analysis') }}";
+    if (pooled === 'true') url += '?pooled=true';
+    window.location.href = url;
+}
+</script>
+{% endblock %}

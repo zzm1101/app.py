@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+{% block title %}K值损失系数计算 - 酸奶工厂田口QLF质量损失系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1" style="font-size: 1.6rem; color: var(--text);">
+            <i class="fa fa-calculator me-2" style="color: var(--primary);"></i>K值损失系数计算
+        </h2>
+        <p class="mb-0" style="font-size: 0.9rem; color: var(--text-muted);">
+            田口质量损失函数核心系数计算，支持对称/非对称 | 修改CTQ后请重新选择以刷新
+        </p>
+    </div>
+</div>
+
+{% if ctq_list and ctq_list|length > 0 %}
+<div class="row">
+    <!-- 左侧控制面板 -->
+    <div class="col-lg-4 mb-2">
+        <div class="card">
+            <div class="card-header py-2">
+                <h6 class="mb-0 fw-bold"><i class="fa fa-sliders me-2" style="color: var(--primary);"></i>选择CTQ计算项</h6>
+            </div>
+            <div class="card-body py-2">
+                <div class="mb-2">
+                    <label class="form-label small fw-medium">CTQ管控项</label>
+                    <select class="form-select form-select-sm" id="ctq_select">
+                        <option value="">请选择CTQ</option>
+                        {% for ctq in ctq_list %}
+                        {% set display = ctq.product_item + ' - ' + ctq.ctq_name if ctq.product_item else '通用 - ' + ctq.ctq_name %}
+                        <option value="{{ ctq.ctq_id }}">{{ display }}（{{ ctq.feature_name }}）</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div id="ctq_info" style="display:none;">
+                    <div class="alert alert-info py-2 mt-2 mb-2 small" style="border-radius: 10px;">
+                        <div class="row">
+                            <div class="col-6">特性：<span id="feature_type">-</span></div>
+                            <div class="col-6">目标m：<span id="target_m">-</span></div>
+                            <div class="col-12">规格限：<span id="spec_limit">-</span></div>
+                            <div class="col-6">FMEA：<span id="fmea_severity">-</span></div>
+                            <div class="col-6">公式：<span id="formula">-</span></div>
+                        </div>
+                    </div>
+                    <div class="row g-1">
+                        <div class="col-6"><label class="form-label small">A0(元)</label><input type="number" step="any" class="form-control form-control-sm" id="a0" readonly></div>
+                        <div class="col-6"><label class="form-label small">Δ0</label><input type="number" step="any" class="form-control form-control-sm" id="delta0" readonly></div>
+                        <div class="col-6"><label class="form-label small">A(元)</label><input type="number" step="any" class="form-control form-control-sm" id="a" readonly></div>
+                        <div class="col-6"><label class="form-label small">Δ</label><input type="number" step="any" class="form-control form-control-sm" id="delta" readonly></div>
+                    </div>
+                    <div id="asymmetric_params" style="display:none;" class="mt-2 border-top pt-2">
+                        <h6 class="small mb-1 fw-bold">非对称参数</h6>
+                        <div class="row g-1">
+                            <div class="col-6"><label class="form-label small">A_upper</label><input type="number" step="any" class="form-control form-control-sm" id="a_upper"></div>
+                            <div class="col-6"><label class="form-label small">A_lower</label><input type="number" step="any" class="form-control form-control-sm" id="a_lower"></div>
+                            <div class="col-6"><label class="form-label small">ΔU (自动)</label><input type="text" class="form-control form-control-sm" id="deltaU_display" readonly></div>
+                            <div class="col-6"><label class="form-label small">ΔL (自动)</label><input type="text" class="form-control form-control-sm" id="deltaL_display" readonly></div>
+                        </div>
+                    </div>
+                    <button id="calc_btn" class="btn btn-primary btn-sm w-100 mt-2"><i class="fa fa-calculator me-1"></i>计算K值</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-2" id="result_card" style="display:none;">
+            <div class="card-header py-2">
+                <h6 class="mb-0 fw-bold"><i class="fa fa-check-circle me-2" style="color: var(--primary);"></i>计算结果</h6>
+            </div>
+            <div class="card-body py-2">
+                <div id="sym_result" style="display:none;">
+                    <label class="form-label small">对称K值</label>
+                    <input type="text" class="form-control form-control-sm" id="k_sym" readonly>
+                </div>
+                <div id="asym_result" style="display:none;">
+                    <div class="row g-1">
+                        <div class="col-6"><label class="form-label small">K_upper</label><input type="text" class="form-control form-control-sm" id="k_up" readonly></div>
+                        <div class="col-6"><label class="form-label small">K_lower</label><input type="text" class="form-control form-control-sm" id="k_low" readonly></div>
+                    </div>
+                </div>
+                <button id="save_btn" class="btn btn-success btn-sm w-100 mt-2"><i class="fa fa-save me-1"></i>保存到CTQ配置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧公式说明 + 敏感度图 -->
+    <div class="col-lg-8 mb-2">
+        <div class="card mb-2">
+            <div class="card-header py-2">
+                <h6 class="mb-0 fw-bold"><i class="fa fa-info-circle me-2" style="color: var(--primary);"></i>核心公式与说明</h6>
+            </div>
+            <div class="card-body py-2 small">
+                <p class="mb-1"><strong>望目/望小：</strong> k = A / Δ²  (优先Δ，否则Δ₀) | 示例：蛋白质 A₀=3000, Δ₀=0.6 → k≈8333</p>
+                <p class="mb-1"><strong>望大：</strong> k = A × Δ²  (活菌数等越大越好)</p>
+                <p class="mb-1"><strong>非对称：</strong> 分别计算 K_upper 与 K_lower，代入对应 A 与自动计算的 ΔU/ΔL | 典型：灌装量少装损失大</p>
+                <p class="mb-0"><strong>FMEA调整：</strong> 根据严重度对 A 放大（调整A = A × 严重度系数），进而影响 K 值。</p>
+            </div>
+        </div>
+
+        <div class="card" id="chart_card" style="display:none;">
+            <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="fa fa-line-chart me-2" style="color: var(--primary);"></i>K值敏感度分析</h6>
+                <div class="btn-group btn-group-sm" id="sensitivity_buttons"></div>
+            </div>
+            <div class="card-body py-2">
+                <div id="sensitivity_chart" style="height:350px;"></div>
+                <small class="text-muted text-center d-block mt-1">横轴为所选参数的倍率变化 (0.5x ~ 2.0x)</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fa fa-calculator fa-3x mb-3" style="color: var(--primary);"></i>
+        <h5>暂无启用的CTQ配置</h5>
+        <p>请先在「CTQ关键特性管理」页面添加并启用CTQ配置</p>
+        <a href="{{ url_for('ctq.ctq_list') }}" class="btn btn-primary">前往CTQ管理</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var ctqList = {{ ctq_list|tojson|safe }};
+var currentKValues = {};
+var currentChart = null;
+
+$(document).ready(function() {
+    // CTQ 切换
+    $('#ctq_select').change(function() {
+        var ctqId = $(this).val();
+        if (!ctqId) {
+            $('#ctq_info').hide();
+            $('#result_card').hide();
+            $('#chart_card').hide();
+            return;
+        }
+        $.getJSON('/ctq/api/' + ctqId, function(ctq) {
+            populateCTQFields(ctq);
+            $('#ctq_info').show();
+            $('#result_card').hide();
+            $('#chart_card').hide();
+            currentKValues = {};
+            if (currentChart) { currentChart.dispose(); currentChart = null; }
+        }).fail(function() { alert('获取CTQ信息失败'); });
+    });
+
+    // 计算K值
+    $('#calc_btn').click(function() {
+        var ctqId = $('#ctq_select').val();
+        if (!ctqId) { alert('请先选择CTQ'); return; }
+        var ctq = ctqList.find(function(c){ return c.ctq_id == ctqId; });
+        if (!ctq) return;
+        var data = { ctq_id: parseInt(ctqId) };
+        if (ctq.asymmetric_loss == '是') {
+            data.asymmetric = true;
+            data.a_upper = parseFloat($('#a_upper').val()) || 0;
+            data.a_lower = parseFloat($('#a_lower').val()) || 0;
+        } else {
+            data.asymmetric = false;
+        }
+        $('#calc_btn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> 计算中...');
+        $.ajax({
+            url: "{{ url_for('k_value.calc_k_value') }}",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            success: function(res) {
+                $('#calc_btn').prop('disabled', false).html('<i class="fa fa-calculator me-1"></i>计算K值');
+                if (res.code == 200) {
+                    $('#result_card').show();
+                    if (res.asymmetric) {
+                        $('#sym_result').hide();
+                        $('#asym_result').show();
+                        $('#k_up').val(res.k_upper !== undefined ? res.k_upper : 0);
+                        $('#k_low').val(res.k_lower !== undefined ? res.k_lower : 0);
+                        currentKValues = {
+                            asymmetric: true,
+                            feature_type: ctq.feature_type,
+                            a_upper: parseFloat($('#a_upper').val()) || 0,
+                            a_lower: parseFloat($('#a_lower').val()) || 0,
+                            deltaU: parseFloat($('#deltaU_display').val()) || 0,
+                            deltaL: parseFloat($('#deltaL_display').val()) || 0,
+                            k_upper: res.k_upper,
+                            k_lower: res.k_lower
+                        };
+                        buildSensitivityButtons(true);
+                    } else {
+                        $('#asym_result').hide();
+                        $('#sym_result').show();
+                        $('#k_sym').val(res.k);
+                        currentKValues = {
+                            asymmetric: false,
+                            feature_type: ctq.feature_type,
+                            a0: parseFloat($('#a0').val()) || 0,
+                            delta0: parseFloat($('#delta0').val()) || 0,
+                            k: res.k
+                        };
+                        buildSensitivityButtons(false);
+                    }
+                    $('#chart_card').show();
+                    drawSensitivity(res.asymmetric ? 'deltaU' : 'delta0');
+                } else {
+                    alert("计算失败：" + (res.msg || "未知错误"));
+                }
+            },
+            error: function(xhr) { alert("请求失败：" + (xhr.responseJSON ? xhr.responseJSON.msg : xhr.statusText)); }
+        });
+    });
+
+    // 保存K值
+    $('#save_btn').click(function() {
+        var ctqId = $('#ctq_select').val();
+        if (!ctqId) { alert('请先选择CTQ'); return; }
+        var ctq = ctqList.find(function(c){ return c.ctq_id == ctqId; });
+        var data = { ctq_id: parseInt(ctqId) };
+        if (ctq.asymmetric_loss == '是') {
+            var kUp = $('#k_up').val().trim();
+            var kLow = $('#k_low').val().trim();
+            if (kUp === '' || kLow === '') { alert('请先完成K值计算'); return; }
+            data.k_upper = kUp;
+            data.k_lower = kLow;
+            data.a_upper = $('#a_upper').val();
+            data.a_lower = $('#a_lower').val();
+        } else {
+            var kSym = $('#k_sym').val().trim();
+            if (kSym === '') { alert('请先完成K值计算'); return; }
+            data.k_upper = kSym;
+            data.k_lower = kSym;
+        }
+        $.ajax({
+            url: "{{ url_for('k_value.save_k_value') }}",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            success: function(res) { alert(res.msg); },
+            error: function(xhr) { alert("保存失败：" + (xhr.responseJSON ? xhr.responseJSON.msg : xhr.statusText)); }
+        });
+    });
+});
+
+function populateCTQFields(ctq) {
+    $('#feature_type').text(ctq.feature_name);
+    $('#target_m').text(ctq.target_m);
+    $('#spec_limit').text(ctq.lsl + ' ~ ' + ctq.usl);
+    $('#fmea_severity').text(ctq.fmea_severity + '级');
+    $('#formula').text(ctq.formula);
+    $('#a0').val(ctq.a0);
+    $('#delta0').val(ctq.delta0);
+    $('#a').val(ctq.a);
+    $('#delta').val(ctq.delta);
+    if (ctq.asymmetric_loss == '是') {
+        $('#asymmetric_params').show();
+        $('#a_upper').val(ctq.a_upper || 0);
+        $('#a_lower').val(ctq.a_lower || 0);
+        var deltaU = (ctq.usl - ctq.target_m).toFixed(4);
+        var deltaL = (ctq.target_m - ctq.lsl).toFixed(4);
+        $('#deltaU_display').val(deltaU);
+        $('#deltaL_display').val(deltaL);
+    } else {
+        $('#asymmetric_params').hide();
+    }
+}
+
+function buildSensitivityButtons(isAsymmetric) {
+    var btnGroup = $('#sensitivity_buttons');
+    btnGroup.empty();
+    if (isAsymmetric) {
+        btnGroup.append(
+            '<button type="button" class="btn btn-outline-secondary btn-sm active" data-param="deltaU">ΔU → K_upper</button>',
+            '<button type="button" class="btn btn-outline-secondary btn-sm" data-param="a_upper">A_upper → K_upper</button>',
+            '<button type="button" class="btn btn-outline-secondary btn-sm" data-param="deltaL">ΔL → K_lower</button>',
+            '<button type="button" class="btn btn-outline-secondary btn-sm" data-param="a_lower">A_lower → K_lower</button>'
+        );
+    } else {
+        btnGroup.append(
+            '<button type="button" class="btn btn-outline-secondary btn-sm active" data-param="delta0">Δ0敏感度</button>',
+            '<button type="button" class="btn btn-outline-secondary btn-sm" data-param="a0">A0敏感度</button>'
+        );
+    }
+    btnGroup.find('button').off('click').on('click', function() {
+        btnGroup.find('button').removeClass('active');
+        $(this).addClass('active');
+        drawSensitivity($(this).data('param'));
+    });
+}
+
+function drawSensitivity(param) {
+    var container = document.getElementById('sensitivity_chart');
+    if (!container || currentKValues.asymmetric === undefined) return;
+    if (currentChart) currentChart.dispose();
+    currentChart = echarts.init(container);
+    var xData = [], yData = [];
+    var baseVal, aConst, deltaConst;
+    if (currentKValues.asymmetric) {
+        switch(param) {
+            case 'deltaU': baseVal = currentKValues.deltaU; aConst = currentKValues.a_upper; break;
+            case 'a_upper': baseVal = currentKValues.a_upper; deltaConst = currentKValues.deltaU; break;
+            case 'deltaL': baseVal = currentKValues.deltaL; aConst = currentKValues.a_lower; break;
+            case 'a_lower': baseVal = currentKValues.a_lower; deltaConst = currentKValues.deltaL; break;
+        }
+    } else {
+        if (param === 'delta0') { baseVal = currentKValues.delta0; aConst = currentKValues.a0; }
+        else if (param === 'a0') { baseVal = currentKValues.a0; deltaConst = currentKValues.delta0; }
+    }
+    if (!baseVal || baseVal === 0) {
+        currentChart.setOption({ title: { text: '当前参数为0，无法绘制', left: 'center', top: 'center' } });
+        return;
+    }
+    for (var i = 0.5; i <= 2.0; i += 0.05) {
+        var val = baseVal * i;
+        var kNew;
+        if (param.startsWith('delta')) {
+            kNew = (currentKValues.feature_type === 'larger') ? aConst * val * val : aConst / (val * val);
+        } else {
+            kNew = (currentKValues.feature_type === 'larger') ? val * deltaConst * deltaConst : val / (deltaConst * deltaConst);
+        }
+        xData.push(val.toFixed(3));
+        yData.push(kNew);
+    }
+    var markIdx = xData.findIndex(function(v){ return Math.abs(parseFloat(v) - baseVal) < 0.001; });
+    currentChart.setOption({
+        color: ['#6366f1'],
+        tooltip: { trigger: 'axis' },
+        grid: { containLabel: true },
+        xAxis: { type: 'category', data: xData, name: param },
+        yAxis: { type: 'value', name: 'K值' },
+        series: [{
+            type: 'line',
+            data: yData,
+            smooth: true,
+            lineStyle: { color: '#6366f1', width: 2 },
+            itemStyle: { color: '#6366f1' },
+            markPoint: {
+                data: [{
+                    name: '当前值',
+                    coord: [markIdx, yData[markIdx]],
+                    value: baseVal.toFixed(3),
+                    itemStyle: { color: '#ef4444' }
+                }],
+                symbolSize: 40,
+                label: { show: true, formatter: '{c}' }
+            }
+        }]
+    });
+}
+</script>
+{% endblock %}

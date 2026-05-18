@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+{% block title %}目标值优化计算 - 酸奶工厂田口QLF质量损失系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1" style="font-size: 1.6rem; color: var(--text);">
+            <i class="fa fa-bullseye me-2" style="color: var(--primary);"></i>目标值优化计算
+        </h2>
+        <p class="mb-0" style="font-size: 0.9rem; color: var(--text-muted);">
+            7种行业标准算法，计算CTQ最优管控目标值，兼顾合规、稳健、低损失、过程集中度
+        </p>
+    </div>
+    <div>
+        <button id="recommend_btn" class="btn btn-success">
+            <i class="fa fa-lightbulb-o me-2"></i>推荐最优方法
+        </button>
+    </div>
+</div>
+
+<div id="recommend_result" class="alert alert-success mb-3" style="display: none; border-radius: 10px;">
+    <h6 class="alert-heading"><i class="fa fa-check-circle me-1"></i>最优方法推荐结果</h6>
+    <p id="recommend_text" class="mb-0"></p>
+</div>
+
+{% if ctq_list and ctq_list|length > 0 %}
+<div class="row">
+    <div class="col-lg-4 mb-3">
+        <div class="card">
+            <div class="card-header"><h6 class="mb-0 fw-bold"><i class="fa fa-sliders me-2" style="color: var(--primary);"></i>基础参数设置</h6></div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label fw-medium">选择CTQ</label>
+                    <select class="form-select" id="ctq_select" required>
+                        <option value="">请选择CTQ</option>
+                        {% for ctq in ctq_list %}
+                        {% set display = ctq.product_item + ' - ' + ctq.ctq_name if ctq.product_item else '通用 - ' + ctq.ctq_name %}
+                        <option value="{{ ctq.ctq_id }}" data-ctq='{{ ctq|tojson }}'>{{ display }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <label class="form-label fw-medium">目标Ppk值</label>
+                        <input type="number" step="0.01" class="form-control" id="target_cpk" value="1.33" min="0.5" max="2.0">
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label class="form-label fw-medium">目标CPM值</label>
+                        <input type="number" step="0.01" class="form-control" id="target_cpm" value="1.0" min="0.5" max="2.0">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">成本倾向因子 <small class="text-muted">(0=偏下限, 1=偏上限, 0.5=中心)</small></label>
+                    <input type="range" class="form-range" id="tendency_slider" min="0" max="1" step="0.1" value="0.5"
+                           oninput="$('#tendency_value').text(this.value)">
+                    <div class="text-center small">当前值：<strong id="tendency_value">0.5</strong></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">计算方法</label>
+                    <select class="form-select" id="method_select" required>
+                        {% for key, value in target_methods.items() %}
+                        <option value="{{ key }}">{{ value.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="alert alert-info small" id="method_desc" style="border-radius: 8px;">请选择计算方法查看说明</div>
+                <div class="alert alert-warning small" id="method_warning" style="display: none; border-radius: 8px;">
+                    <i class="fa fa-exclamation-triangle me-2"></i><span id="warning_text"></span>
+                </div>
+                <button id="calc_btn" class="btn btn-primary w-100 mb-3">
+                    <i class="fa fa-calculator me-2"></i>计算最优目标值
+                </button>
+            </div>
+        </div>
+
+        <div class="card mt-3" id="result_card" style="display: none;">
+            <div class="card-header"><h6 class="mb-0 fw-bold"><i class="fa fa-check-circle me-2" style="color: var(--primary);"></i>计算结果</h6></div>
+            <div class="card-body">
+                <div class="mb-3"><label class="form-label fw-medium">最优目标值</label><input type="number" step="any" class="form-control" id="optimal_target" readonly></div>
+                <div class="mb-3"><label class="form-label fw-medium">预测CPM</label><input type="text" class="form-control" id="predicted_cpm" readonly></div>
+                <div class="mb-3"><label class="form-label fw-medium">核心指标</label><input type="text" class="form-control" id="core_index" readonly></div>
+                <div class="mb-3"><label class="form-label fw-medium">收益说明</label><textarea class="form-control" rows="2" id="benefit" readonly></textarea></div>
+                <div class="mb-3"><label class="form-label fw-medium">备注说明</label><textarea class="form-control" rows="2" id="remark" readonly></textarea></div>
+                <div class="mb-3"><label class="form-label fw-medium">原目标值</label><input type="text" class="form-control" id="old_target" readonly></div>
+                <button id="save_btn" class="btn btn-success w-100"><i class="fa fa-save me-2"></i>保存新目标值到CTQ配置</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8 mb-3">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="fa fa-list-alt me-2" style="color: var(--primary);"></i>7种目标值计算方法可用状态</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-0" id="method_status_table">
+                        <thead><tr><th>方法编号</th><th>方法名称</th><th>适用场景</th><th>可用状态</th><th>状态说明</th></tr></thead>
+                        <tbody>
+                            {% for key, value in target_methods.items() %}
+                            <tr data-method="{{ key }}">
+                                <td>{{ key.split('_')[1] }}</td>
+                                <td><strong>{{ value.name }}</strong></td>
+                                <td>{{ value.desc }}</td>
+                                <td><span class="badge bg-secondary">待检测</span></td>
+                                <td>请先选择CTQ</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {% if decay_config %}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="fa fa-clock-o me-2" style="color: var(--primary);"></i>货架期衰减参数配置（仅活菌数CTQ生效）</h6>
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#decayModal"><i class="fa fa-edit me-1"></i>编辑参数</button>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2"><label class="form-label small fw-medium">保质期天数</label><input type="text" class="form-control form-control-sm" value="{{ decay_config.shelf_life_days }}" readonly></div>
+                    <div class="col-md-3 mb-2"><label class="form-label small fw-medium">标准冷链温度(℃)</label><input type="text" class="form-control form-control-sm" value="{{ decay_config.std_cold_temp }}" readonly></div>
+                    <div class="col-md-3 mb-2"><label class="form-label small fw-medium">实际平均温度(℃)</label><input type="text" class="form-control form-control-sm" value="{{ decay_config.actual_avg_temp }}" readonly></div>
+                    <div class="col-md-3 mb-2"><label class="form-label small fw-medium">温度波动范围(℃)</label><input type="text" class="form-control form-control-sm" value="{{ decay_config.temp_fluctuation }}" readonly></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fa fa-bullseye fa-3x mb-3" style="color: var(--primary);"></i>
+        <h5>暂无启用的CTQ配置</h5>
+        <p>请先在「CTQ关键特性管理」页面添加并启用CTQ配置</p>
+        <a href="{{ url_for('ctq.ctq_list') }}" class="btn btn-primary mt-2">前往CTQ管理</a>
+    </div>
+</div>
+{% endif %}
+
+<!-- 衰减参数编辑模态框 -->
+{% if decay_config %}
+<div class="modal fade" id="decayModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">编辑货架期衰减参数</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="decay_form" method="POST" action="{{ url_for('target.save_decay_config') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <input type="hidden" name="decay_id" value="{{ decay_config.id }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">绑定CTQ</label>
+                        <select class="form-select" name="ctq_id" required>
+                            {% for ctq in ctq_list %}
+                            {% set display = ctq.product_item + ' - ' + ctq.ctq_name if ctq.product_item else '通用 - ' + ctq.ctq_name %}
+                            <option value="{{ ctq.ctq_id }}" {% if decay_config.ctq_id == ctq.ctq_id %}selected{% endif %}>{{ display }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3"><label class="form-label fw-medium">保质期天数</label><input type="number" class="form-control" name="shelf_life_days" value="{{ decay_config.shelf_life_days }}" required></div>
+                        <div class="col-md-6 mb-3"><label class="form-label fw-medium">标准冷链温度(℃)</label><input type="number" step="any" class="form-control" name="std_cold_temp" value="{{ decay_config.std_cold_temp }}" required></div>
+                        <div class="col-md-6 mb-3"><label class="form-label fw-medium">实际平均温度(℃)</label><input type="number" step="any" class="form-control" name="actual_avg_temp" value="{{ decay_config.actual_avg_temp }}" required></div>
+                        <div class="col-md-6 mb-3"><label class="form-label fw-medium">温度波动范围(℃)</label><input type="number" step="any" class="form-control" name="temp_fluctuation" value="{{ decay_config.temp_fluctuation }}" required></div>
+                        <div class="col-md-6 mb-3"><label class="form-label fw-medium">温度衰减系数</label><input type="number" step="any" class="form-control" name="temp_coef" value="{{ decay_config.temp_coef }}" required></div>
+                        <div class="col-md-6 mb-3"><label class="form-label fw-medium">过程标准差</label><input type="number" step="any" class="form-control" name="process_std" value="{{ decay_config.process_std }}" required></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button type="submit" class="btn btn-primary">保存参数</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var current_ctq_id = null;
+var current_ctq = null;
+var method_map = {{ target_methods|safe }};
+var current_method_status = {};
+
+$(document).ready(function(){
+    $('#method_select').change(function(){
+        var method = $(this).val();
+        $('#method_desc').text(method_map[method].desc + " | 前置依赖：" + (method_map[method].need || "仅需CTQ规格限"));
+        if(current_method_status[method]){
+            if(!current_method_status[method].available){
+                $('#method_warning').show();
+                $('#warning_text').text(current_method_status[method].reason);
+                $('#calc_btn').prop('disabled', true);
+            }else{
+                $('#method_warning').hide();
+                $('#calc_btn').prop('disabled', false);
+            }
+        }
+    });
+    $('#method_select').trigger('change');
+
+    $('#ctq_select').change(function(){
+        var selected = $(this).find('option:selected');
+        if(!selected.val()){
+            current_ctq_id = null; current_ctq = null; $('#old_target').val(''); $('#recommend_result').hide(); return;
+        }
+        current_ctq = selected.data('ctq');
+        current_ctq_id = current_ctq.ctq_id;
+        $('#old_target').val(current_ctq.target_m);
+        $('#recommend_result').hide();
+        getMethodStatus();
+    });
+
+    $('#target_cpk, #target_cpm').change(function(){ if(current_ctq_id) getMethodStatus(); });
+});
+
+function getMethodStatus(){
+    $.ajax({
+        url: "{{ url_for('target.get_method_status') }}",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ ctq_id: current_ctq_id, target_cpk: $('#target_cpk').val(), target_cpm: $('#target_cpm').val() }),
+        success: function(res){
+            if(res.code == 200){
+                current_method_status = res.method_status;
+                $.each(current_method_status, function(key, status){
+                    var tr = $('#method_status_table tr[data-method="' + key + '"]');
+                    if(status.available){
+                        tr.find('td:eq(3)').html('<span class="badge bg-success">可用</span>');
+                        tr.find('td:eq(4)').text('✅ 校验通过，可正常使用');
+                        $('#method_select option[value="' + key + '"]').prop('disabled', false);
+                    }else{
+                        tr.find('td:eq(3)').html('<span class="badge bg-danger">不可用</span>');
+                        tr.find('td:eq(4)').text(status.reason);
+                        $('#method_select option[value="' + key + '"]').prop('disabled', true);
+                    }
+                });
+                $('#method_select').trigger('change');
+            } else { alert(res.remark); }
+        },
+        error: function(){ alert('获取方法状态失败'); }
+    });
+}
+
+$('#recommend_btn').click(function(){
+    if(!current_ctq_id){ alert('请先选择CTQ'); return; }
+    $('#recommend_btn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-2"></i>推荐中...');
+    $.ajax({
+        url: "{{ url_for('target.recommend_method') }}",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({
+            ctq_id: current_ctq_id,
+            target_cpk: $('#target_cpk').val(),
+            tendency: parseFloat($('#tendency_slider').val()),
+            target_cpm: $('#target_cpm').val()
+        }),
+        success: function(res){
+            $('#recommend_btn').prop('disabled', false).html('<i class="fa fa-lightbulb-o me-2"></i>推荐最优方法');
+            if(res.code == 200){
+                $('#method_select').val(res.recommend_method).trigger('change');
+                $('#recommend_text').html(`推荐使用【${res.method_name}】，原因：${res.recommend_reason}`);
+                $('#recommend_result').show();
+            } else { alert(res.remark); }
+        },
+        error: function(){ $('#recommend_btn').prop('disabled', false).html('<i class="fa fa-lightbulb-o me-2"></i>推荐最优方法'); alert('推荐失败'); }
+    });
+});
+
+$('#calc_btn').click(function(){
+    if(!current_ctq_id){ alert('请先选择CTQ'); return; }
+    var method_key = $('#method_select').val();
+    var target_cpk = $('#target_cpk').val();
+    var target_cpm = $('#target_cpm').val();
+    var tendency = parseFloat($('#tendency_slider').val());
+    $('#calc_btn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-2"></i>计算中...');
+    $.ajax({
+        url: "{{ url_for('target.calc_target') }}",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({
+            ctq_id: current_ctq_id,
+            method_key: method_key,
+            target_cpk: target_cpk,
+            tendency: tendency,
+            target_cpm: target_cpm
+        }),
+        success: function(res){
+            $('#calc_btn').prop('disabled', false).html('<i class="fa fa-calculator me-2"></i>计算最优目标值');
+            if(res.code == 200){
+                $('#optimal_target').val(res.optimal_target);
+                $('#core_index').val(res.core_index);
+                $('#benefit').val(res.benefit);
+                $('#remark').val(res.remark);
+                $('#predicted_cpm').val(res.predicted_cpm !== undefined ? res.predicted_cpm : '');
+                $('#result_card').show();
+            } else { alert(res.remark || '计算失败'); }
+        },
+        error: function(){ $('#calc_btn').prop('disabled', false).html('<i class="fa fa-calculator me-2"></i>计算最优目标值'); alert('请求失败'); }
+    });
+});
+
+$('#save_btn').click(function(){
+    if(!current_ctq_id){ alert('请先选择CTQ'); return; }
+    var new_target = $('#optimal_target').val();
+    if(!new_target){ alert('请先计算最优目标值'); return; }
+    $.ajax({
+        url: "{{ url_for('target.save_target') }}",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ ctq_id: current_ctq_id, new_target: new_target }),
+        success: function(res){
+            alert(res.msg);
+            $('#old_target').val(new_target);
+            if(current_ctq) current_ctq.target_m = new_target;
+        },
+        error: function(){ alert('保存失败'); }
+    });
+});
+
+$('#decay_form').submit(function(e){
+    e.preventDefault();
+    $.ajax({
+        url: "{{ url_for('target.save_decay_config') }}",
+        type: "POST",
+        data: $(this).serialize(),
+        success: function(res){ alert(res.msg); if(res.code == 200) window.location.reload(); },
+        error: function(){ alert('保存失败'); }
+    });
+});
+</script>
+{% endblock %}

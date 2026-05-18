@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}系统总览 - 酸奶工厂田口QLF质量损失系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1" style="font-size: 1.6rem; color: var(--text);">
+            <i class="fa fa-tachometer me-2" style="color: var(--primary);"></i>系统总览
+        </h2>
+        <p class="mb-0" style="font-size: 0.9rem; color: var(--text-muted);">
+            全局质量损失KPI · 多维汇总 · SPC预警 · 联动分析
+        </p>
+    </div>
+    <div id="filter-badge" class="alert alert-info py-2 px-3 mb-0 d-none" role="alert" style="border-radius: 10px;">
+        <i class="fa fa-filter me-1"></i>当前筛选：<span id="filter-text"></span>
+        <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="window.clearFilters()">
+            <i class="fa fa-times me-1"></i>清除
+        </button>
+    </div>
+</div>
+
+<!-- SPC 预警 -->
+{% if spc_alerts %}
+<div class="alert alert-warning mb-4" style="border-radius: 10px; border: none; box-shadow: var(--shadow-sm);">
+    <h5 class="alert-heading"><i class="fa fa-exclamation-triangle me-2" style="color: #f59e0b;"></i>过程异常预警</h5>
+    <ul class="mb-0">
+        {% for alert in spc_alerts %}
+        <li>{{ alert }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- KPI 卡片 -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-lg-3 col-md-6 mb-3">
+        <div class="card kpi-card kpi-danger">
+            <div class="card-body">
+                <i class="fa fa-money kpi-icon"></i>
+                <div class="kpi-value">¥{{ "%.2f"|format(total_loss|default(0)) }}</div>
+                <div class="kpi-label">累计总质量损失</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-3 col-md-6 mb-3">
+        <div class="card kpi-card {% if compliance_rate >= 99.5 %}kpi-success{% elif compliance_rate >= 99 %}kpi-warning{% else %}kpi-danger{% endif %}">
+            <div class="card-body">
+                <i class="fa fa-check-circle kpi-icon"></i>
+                <div class="kpi-value">{{ "%.2f"|format(compliance_rate|default(100)) }}%</div>
+                <div class="kpi-label">国标合规率</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-3 col-md-6 mb-3">
+        <div class="card kpi-card kpi-info">
+            <div class="card-body">
+                <i class="fa fa-cogs kpi-icon"></i>
+                <div class="kpi-value">{{ ctq_count|default(0) }}</div>
+                <div class="kpi-label">启用CTQ管控项</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-3 col-md-6 mb-3">
+        <div class="card kpi-card kpi-primary">
+            <div class="card-body">
+                <i class="fa fa-database kpi-icon"></i>
+                <div class="kpi-value">{{ batch_count|default(0) }}</div>
+                <div class="kpi-label">已分析生产批次</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图表区域 -->
+<div class="row mb-4">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fa fa-pie-chart me-2" style="color: #ef4444;"></i>各CTQ质量损失占比
+            </div>
+            <div class="card-body"><div id="chart_ctq" style="height:300px;"></div></div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fa fa-bar-chart me-2" style="color: #f59e0b;"></i>品项损失分布
+            </div>
+            <div class="card-body"><div id="chart_item" style="height:300px;"></div></div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fa fa-line-chart me-2" style="color: #3b82f6;"></i>产线损失对比
+            </div>
+            <div class="card-body"><div id="chart_line" style="height:300px;"></div></div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fa fa-calendar me-2" style="color: #8b5cf6;"></i>月度损失趋势
+            </div>
+            <div class="card-body"><div id="chart_month" style="height:300px;"></div></div>
+        </div>
+    </div>
+    <div class="col-lg-12 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fa fa-industry me-2" style="color: #06b6d4;"></i>生产环节损失分布
+            </div>
+            <div class="card-body"><div id="chart_process" style="height:300px;"></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- 高损失批次表格 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fa fa-exclamation-circle me-2" style="color: #ef4444;"></i>高损失批次（损失 > ¥10,000）
+            </div>
+            <div class="card-body">
+                {% if high_batches %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover" id="highBatchTable">
+                        <thead>
+                            <tr>
+                                <th>批次号</th>
+                                <th>品项</th>
+                                <th>总损失（含隐性）</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for batch_no, item, loss in high_batches %}
+                            <tr>
+                                <td>{{ batch_no }}</td>
+                                <td>{{ item }}</td>
+                                <td data-order="{{ loss }}" class="text-danger fw-bold">¥{{ "%.2f"|format(loss) }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-3">无高损失批次</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var ctqLossData = {{ ctq_loss_data|tojson }};
+var itemLabels = {{ item_labels|tojson }};
+var itemValues = {{ item_values|tojson }};
+var lineLabels = {{ line_labels|tojson }};
+var lineValues = {{ line_values|tojson }};
+var months = {{ months|tojson }};
+var monthLosses = {{ month_losses|tojson }};
+var processLabels = {{ process_labels|tojson }};
+var processVals = {{ process_vals|tojson }};
+
+var allCharts = {};
+
+function drawAllCharts() {
+    if (ctqLossData.length) allCharts.ctq = drawPieChart('chart_ctq', ctqLossData);
+    if (itemLabels.length) allCharts.item = drawBarChart('chart_item', itemLabels, itemValues, '损失(元)');
+    if (lineLabels.length) allCharts.line = drawBarChart('chart_line', lineLabels, lineValues, '损失(元)');
+    if (months.length) allCharts.month = drawLineChart('chart_month', months, monthLosses, '损失(元)');
+    if (processLabels.length) allCharts.process = drawBarChart('chart_process', processLabels, processVals, '损失(元)');
+    bindChartEvents();
+}
+
+function bindChartEvents() {
+    if (allCharts.ctq) {
+        allCharts.ctq.off('click');
+        allCharts.ctq.on('click', function(params) {
+            window.location.href = '?ctq=' + encodeURIComponent(params.name);
+        });
+    }
+    if (allCharts.item) {
+        allCharts.item.off('click');
+        allCharts.item.on('click', function(params) {
+            window.location.href = '?item=' + encodeURIComponent(params.name);
+        });
+    }
+    if (allCharts.line) {
+        allCharts.line.off('click');
+        allCharts.line.on('click', function(params) {
+            window.location.href = '?line=' + encodeURIComponent(params.name);
+        });
+    }
+    if (allCharts.month) {
+        allCharts.month.off('click');
+        allCharts.month.on('click', function(params) {
+            var m = parseInt(params.name);
+            if (!isNaN(m)) window.location.href = '?month=' + m;
+        });
+    }
+    if (allCharts.process) {
+        allCharts.process.off('click');
+        allCharts.process.on('click', function(params) {
+            window.location.href = '?process=' + encodeURIComponent(params.name);
+        });
+    }
+}
+
+window.clearFilters = function() {
+    window.location.href = window.location.pathname;
+};
+
+$(document).ready(function() {
+    drawAllCharts();
+
+    if ($('#highBatchTable').length) {
+        initDataTable('#highBatchTable', {
+            pageLength: 10,
+            order: [[2, 'desc']],
+            searching: true,
+            paging: true,
+            language: {
+                sSearch: "搜索批次/品项：",
+                sLengthMenu: "显示 _MENU_ 项",
+                oPaginate: { sFirst: "首页", sPrevious: "上页", sNext: "下页", sLast: "末页" }
+            }
+        });
+    }
+
+    var urlParams = new URLSearchParams(window.location.search);
+    var filters = [];
+    if (urlParams.has('ctq')) filters.push('CTQ: ' + urlParams.get('ctq'));
+    if (urlParams.has('item')) filters.push('品项: ' + urlParams.get('item'));
+    if (urlParams.has('line')) filters.push('产线: ' + urlParams.get('line'));
+    if (urlParams.has('month')) filters.push('月份: ' + urlParams.get('month') + '月');
+    if (urlParams.has('process')) filters.push('环节: ' + urlParams.get('process'));
+    if (filters.length > 0) {
+        $('#filter-text').text(filters.join(', '));
+        $('#filter-badge').removeClass('d-none');
+    } else {
+        $('#filter-badge').addClass('d-none');
+    }
+});
+</script>
+{% endblock %}

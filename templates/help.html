@@ -1,0 +1,1804 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>酸奶工厂田口QLF质量损失系统 - 帮助文档</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #3b82f6;
+            --secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #06b6d4;
+            --bg-light: #f8fafc;
+            --bg-dark: #1e293b;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: var(--text-primary);
+            padding-top: 64px;
+            line-height: 1.6;
+        }
+
+        .top-navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            box-shadow: var(--shadow-lg);
+            height: 64px;
+            backdrop-filter: blur(10px);
+        }
+
+        .top-navbar .navbar-brand {
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .top-navbar .navbar-brand i {
+            font-size: 1.5rem;
+            margin-right: 0.75rem;
+        }
+
+        .top-navbar .btn-outline-light {
+            border-color: rgba(255, 255, 255, 0.5);
+            color: #fff;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .top-navbar .btn-outline-light:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 64px;
+            bottom: 0;
+            left: 0;
+            width: 280px;
+            padding: 1.5rem 0;
+            overflow-y: auto;
+            background: #fff;
+            border-right: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .sidebar .nav-link {
+            color: var(--text-secondary);
+            padding: 0.75rem 1.5rem;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            border-radius: 0 8px 8px 0;
+            margin: 0.25rem 0.5rem;
+        }
+
+        .sidebar .nav-link i {
+            width: 1.25rem;
+            margin-right: 0.75rem;
+            text-align: center;
+        }
+
+        .sidebar .nav-link:hover {
+            color: var(--primary);
+            background: rgba(37, 99, 235, 0.05);
+            transform: translateX(2px);
+        }
+
+        .sidebar .nav-link.active {
+            color: var(--primary);
+            background: rgba(37, 99, 235, 0.1);
+            border-left-color: var(--primary);
+            font-weight: 600;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sidebar .nav-sub {
+            padding-left: 3.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .sidebar .nav-sub.active {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #f8fafc 0%, #fff 100%);
+            border-bottom: 1px solid var(--border-color);
+            border-radius: 16px 16px 0 0 !important;
+            font-weight: 700;
+            padding: 1.25rem 1.5rem;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+
+        .card-header i {
+            color: var(--primary);
+            margin-right: 0.5rem;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .design-note {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-left: 4px solid var(--primary);
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+            border-radius: 0 12px 12px 0;
+            font-size: 0.95rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .design-note h6 {
+            color: var(--primary-dark);
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .formula {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 1.1em;
+            text-align: center;
+            margin: 1rem 0;
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .formula strong {
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        .screenshot-placeholder {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px dashed var(--border-color);
+            border-radius: 16px;
+            padding: 3rem;
+            text-align: center;
+            color: var(--text-secondary);
+            margin: 1.5rem 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .screenshot-placeholder:hover {
+            background: #e2e8f0;
+            border-color: var(--primary-light);
+        }
+
+        .screenshot-placeholder i {
+            color: var(--secondary);
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .scroll-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            text-align: center;
+            line-height: 48px;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            border: none;
+        }
+
+        .scroll-top.show {
+            opacity: 1;
+        }
+
+        .scroll-top:hover {
+            transform: scale(1.1);
+            background: var(--primary-dark);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .table {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .table th {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            font-weight: 700;
+            border-bottom-width: 2px;
+            border-color: var(--border-color);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+        }
+
+        .table td {
+            vertical-align: middle;
+            padding: 0.75rem 1rem;
+            border-color: var(--border-color);
+        }
+
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(248, 250, 252, 0.5);
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(37, 99, 235, 0.05);
+        }
+
+        .alert {
+            border-radius: 12px;
+            border: none;
+            padding: 1rem 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            color: #92400e;
+            border-left: 4px solid var(--warning);
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%);
+            color: #0e7490;
+            border-left: 4px solid var(--info);
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            color: #166534;
+            border-left: 4px solid var(--success);
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            color: #991b1b;
+            border-left: 4px solid var(--danger);
+        }
+
+        .accordion-item {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .accordion-button {
+            background: linear-gradient(135deg, #f8fafc 0%, #fff 100%);
+            font-weight: 600;
+            color: var(--text-primary);
+            padding: 1rem 1.25rem;
+            border-radius: 12px !important;
+            transition: all 0.3s ease;
+        }
+
+        .accordion-button:not(.collapsed) {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            color: var(--primary);
+            box-shadow: none;
+        }
+
+        .accordion-button:focus {
+            box-shadow: none;
+            border-color: var(--primary-light);
+        }
+
+        .accordion-body {
+            padding: 1.25rem;
+            background: #fff;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        h5 {
+            font-size: 1.1rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        h6 {
+            font-size: 1rem;
+            margin-top: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        ul, ol {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .list-group-item {
+            border-color: var(--border-color);
+            padding: 0.75rem 1rem;
+        }
+
+        .list-group-item i {
+            margin-right: 0.5rem;
+        }
+
+        footer {
+            background: #fff;
+            border-top: 1px solid var(--border-color);
+            padding: 2rem 0;
+            margin-top: 3rem;
+            border-radius: 16px 16px 0 0;
+            box-shadow: var(--shadow-md);
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                position: static;
+                width: 100%;
+                height: auto;
+                margin-bottom: 1.5rem;
+                border-radius: 16px;
+                box-shadow: var(--shadow-md);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .top-navbar .navbar-brand {
+                font-size: 1rem;
+            }
+
+            .card {
+                margin-bottom: 1.5rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .main-content {
+                padding: 0.75rem;
+            }
+
+            .card-body {
+                padding: 1rem;
+            }
+
+            .formula {
+                font-size: 0.9em;
+                padding: 0.75rem 1rem;
+            }
+
+            .screenshot-placeholder {
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-navbar navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="fa fa-flask"></i>酸奶工厂田口QLF质量损失系统 - 帮助文档</a>
+            <div class="d-flex">
+                <a href="/" class="btn btn-outline-light btn-sm"><i class="fa fa-arrow-left me-1"></i>返回系统首页</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="sidebar">
+        <nav class="nav flex-column">
+            <a class="nav-link" href="#system-overview"><i class="fa fa-info-circle"></i>1. 系统概述</a>
+            <a class="nav-link" href="#quick-start"><i class="fa fa-rocket"></i>2. 快速入门</a>
+            <a class="nav-link" href="#core-concepts"><i class="fa fa-lightbulb-o"></i>3. 核心概念</a>
+            <a class="nav-link" href="#module-ctq"><i class="fa fa-cogs"></i>4. CTQ管理</a>
+            <a class="nav-link nav-sub" href="#ctq-design">4.1 设计思路</a>
+            <a class="nav-link nav-sub" href="#ctq-functions">4.2 核心功能</a>
+            <a class="nav-link nav-sub" href="#ctq-usage">4.3 使用流程</a>
+            <a class="nav-link nav-sub" href="#ctq-fields">4.4 字段说明</a>
+            <a class="nav-link" href="#module-k"><i class="fa fa-calculator"></i>5. K值计算</a>
+            <a class="nav-link nav-sub" href="#k-design">5.1 设计思路</a>
+            <a class="nav-link nav-sub" href="#k-functions">5.2 核心功能</a>
+            <a class="nav-link nav-sub" href="#k-usage">5.3 使用流程</a>
+            <a class="nav-link nav-sub" href="#k-formulas">5.4 计算公式</a>
+            <a class="nav-link" href="#module-production"><i class="fa fa-database"></i>6. 生产数据</a>
+            <a class="nav-link nav-sub" href="#production-design">6.1 设计思路</a>
+            <a class="nav-link nav-sub" href="#production-functions">6.2 核心功能</a>
+            <a class="nav-link nav-sub" href="#production-usage">6.3 使用流程</a>
+            <a class="nav-link" href="#module-loss"><i class="fa fa-line-chart"></i>7. 损失计算</a>
+            <a class="nav-link nav-sub" href="#loss-design">7.1 设计思路</a>
+            <a class="nav-link nav-sub" href="#loss-functions">7.2 核心功能</a>
+            <a class="nav-link nav-sub" href="#loss-usage">7.3 使用流程</a>
+            <a class="nav-link nav-sub" href="#loss-formulas">7.4 计算公式</a>
+            <a class="nav-link" href="#module-target"><i class="fa fa-bullseye"></i>8. 目标值优化</a>
+            <a class="nav-link nav-sub" href="#target-design">8.1 设计思路</a>
+            <a class="nav-link nav-sub" href="#target-functions">8.2 核心功能</a>
+            <a class="nav-link nav-sub" href="#target-methods">8.3 7种方法详解</a>
+            <a class="nav-link" href="#module-visualization"><i class="fa fa-pie-chart"></i>9. 可视化</a>
+            <a class="nav-link nav-sub" href="#visualization-design">9.1 设计思路</a>
+            <a class="nav-link nav-sub" href="#visualization-charts">9.2 核心图表</a>
+            <a class="nav-link nav-sub" href="#visualization-filter">9.3 表格筛选</a>
+            <a class="nav-link" href="#module-improvement"><i class="fa fa-tasks"></i>10. 改进指导</a>
+            <a class="nav-link nav-sub" href="#improvement-design">10.1 设计思路</a>
+            <a class="nav-link nav-sub" href="#improvement-priority">10.2 优先级模型</a>
+            <a class="nav-link nav-sub" href="#improvement-suggestions">10.3 智能建议</a>
+            <a class="nav-link" href="#workflow"><i class="fa fa-sitemap"></i>11. 工作流程</a>
+            <a class="nav-link" href="#best-practices"><i class="fa fa-star"></i>12. 最佳实践</a>
+            <a class="nav-link" href="#faq"><i class="fa fa-question-circle"></i>13. 常见问题</a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="container-fluid">
+            <!-- 1. 系统概述 -->
+            <section id="system-overview" class="mb-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fa fa-info-circle"></i>1. 系统概述</h4>
+                    </div>
+                    <div class="card-body">
+                        <h5><i class="fa fa-crosshairs text-primary me-2"></i>1.1 系统定位</h5>
+                        <p>本系统是专为酸奶制造工厂打造的<strong>田口质量损失分析与优化平台</strong>，它将田口玄一博士的质量损失理论与乳制品行业特性深度结合，实现了从"质量合规管理"到"质量成本管理"的转变。</p>
+
+                        <div class="design-note">
+                            <h6><i class="fa fa-lightbulb-o"></i> 设计合理性说明</h6>
+                            <p>传统质量管理只关注"是否合格"，认为只要在规格限内就没有损失。但在实际生产中，即使产品都合格，偏离目标值的产品仍然会给企业带来损失（如口感不一致、保质期缩短、客户满意度下降等）。</p>
+                            <p>田口质量损失理论认为：<strong>"质量只要偏离目标值，就会产生损失，偏离越大，损失越大"</strong>。本系统正是基于这一核心思想设计，帮助工厂量化这些"看不见的损失"，并找到质量与成本的最佳平衡点。</p>
+                        </div>
+
+                        <h5><i class="fa fa-diamond text-primary me-2"></i>1.2 系统核心价值</h5>
+                        <div class="row g-4 mt-3">
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="bg-primary text-white rounded-circle p-2 me-3">
+                                                <i class="fa fa-check-circle"></i>
+                                            </div>
+                                            <h6 class="mb-0">量化质量损失</h6>
+                                        </div>
+                                        <p class="mb-0 text-muted">将抽象的"质量偏离"转化为可计算的经济损失，让质量成本看得见</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="bg-success text-white rounded-circle p-2 me-3">
+                                                <i class="fa fa-check-circle"></i>
+                                            </div>
+                                            <h6 class="mb-0">优化工艺目标</h6>
+                                        </div>
+                                        <p class="mb-0 text-muted">基于数据科学设定最优工艺参数，避免质量过剩或不足</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="bg-warning text-white rounded-circle p-2 me-3">
+                                                <i class="fa fa-check-circle"></i>
+                                            </div>
+                                            <h6 class="mb-0">识别改进机会</h6>
+                                        </div>
+                                        <p class="mb-0 text-muted">自动生成改进优先级和行动建议，把有限的资源投入到最有价值的地方</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="bg-danger text-white rounded-circle p-2 me-3">
+                                                <i class="fa fa-check-circle"></i>
+                                            </div>
+                                            <h6 class="mb-0">降低质量成本</h6>
+                                        </div>
+                                        <p class="mb-0 text-muted">通过精准改进，显著减少返工、报废、客户投诉和品牌声誉损失</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h5 class="mt-4"><i class="fa fa-sitemap text-primary me-2"></i>1.3 系统整体架构</h5>
+                        <div class="screenshot-placeholder">
+                            <i class="fa fa-picture-o fa-4x mb-3"></i>
+                            <p class="fw-bold">系统架构图：基础配置层 → 核心计算层 → 决策输出层</p>
+                            <small class="text-muted">（实际系统中为交互式仪表盘，数据实时更新）</small>
+                        </div>
+
+                        <h5 class="mt-4"><i class="fa fa-users text-primary me-2"></i>1.4 适用对象</h5>
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-3">
+                                <div class="card border-0 shadow-sm text-center h-100">
+                                    <div class="card-body">
+                                        <i class="fa fa-user-md fa-2x text-primary mb-2"></i>
+                                        <h6>质量工程师</h6>
+                                        <p class="text-muted mb-0">负责质量数据采集、分析和改进</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-0 shadow-sm text-center h-100">
+                                    <div class="card-body">
+                                        <i class="fa fa-user fa-2x text-primary mb-2"></i>
+                                        <h6>生产主管</h6>
+                                        <p class="text-muted mb-0">负责生产过程控制和改进措施实施</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-0 shadow-sm text-center h-100">
+                                    <div class="card-body">
+                                        <i class="fa fa-wrench fa-2x text-primary mb-2"></i>
+                                        <h6>工艺工程师</h6>
+                                        <p class="text-muted mb-0">负责工艺参数优化和标准化</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-0 shadow-sm text-center h-100">
+                                    <div class="card-body">
+                                        <i class="fa fa-briefcase fa-2x text-primary mb-2"></i>
+                                        <h6>工厂管理人员</h6>
+                                        <p class="text-muted mb-0">负责质量决策和资源调配</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. 快速入门 -->
+            <section id="quick-start" class="mb-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fa fa-rocket"></i>2. 快速入门：3分钟上手系统</h4>
+                    </div>
+                    <div class="card-body">
+                        <p>首次使用系统，请按照以下步骤操作，即可快速体验系统的核心功能：</p>
+
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card border-primary h-100">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0"><i class="fa fa-cog me-2"></i>步骤1：系统初始化</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>登录系统后，点击左侧菜单的<strong>"CTQ管理"</strong>，然后点击页面右上角的<strong>"重置为默认配置"</strong>按钮。</p>
+                                        <p class="text-muted">系统会自动加载酸奶行业7个核心CTQ的国标配置，无需从零开始配置。</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-success h-100">
+                                    <div class="card-header bg-success text-white">
+                                        <h5 class="mb-0"><i class="fa fa-upload me-2"></i>步骤2：导入生产数据</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>点击左侧菜单的<strong>"生产数据"</strong>，然后点击<strong>"下载模板"</strong>按钮。</p>
+                                        <p>按照模板要求填写生产检测数据，然后点击<strong>"批量导入"</strong>按钮上传数据。</p>
+                                        <div class="alert alert-warning py-2 mb-0"><i class="fa fa-exclamation-triangle"></i> 同一批次同一CTQ建议导入≥10个样本</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-warning h-100">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h5 class="mb-0"><i class="fa fa-calculator me-2"></i>步骤3：计算K值</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>点击左侧菜单的<strong>"K值计算"</strong>，在下拉列表中选择需要计算的CTQ。</p>
+                                        <p>系统会自动加载CTQ配置中的参数，点击<strong>"计算K值"</strong>按钮，然后点击<strong>"保存K值"</strong>。</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-info h-100">
+                                    <div class="card-header bg-info text-white">
+                                        <h5 class="mb-0"><i class="fa fa-bar-chart me-2"></i>步骤4：计算质量损失</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>点击左侧菜单的<strong>"损失分析"</strong>，选择标准差类型（建议成熟产线使用"长期合并标准差"）。</p>
+                                        <p>点击<strong>"开始计算"</strong>按钮，等待计算完成。</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <h5><i class="fa fa-eye text-primary me-2"></i>步骤5：查看结果并改进</h5>
+                            <p>计算完成后，您可以：</p>
+                            <div class="row g-3 mt-3">
+                                <div class="col-md-3">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fa fa-dashboard fa-2x text-primary mb-2"></i>
+                                            <h6>仪表盘</h6>
+                                            <p class="text-muted mb-0">查看工厂整体质量状况和损失分布</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fa fa-line-chart fa-2x text-primary mb-2"></i>
+                                            <h6>损失分析</h6>
+                                            <p class="text-muted mb-0">查看详细的损失数据和过程能力分析</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fa fa-bullseye fa-2x text-primary mb-2"></i>
+                                            <h6>目标值优化</h6>
+                                            <p class="text-muted mb-0">优化工艺参数，降低质量损失</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fa fa-tasks fa-2x text-primary mb-2"></i>
+                                            <h6>改进建议</h6>
+                                            <p class="text-muted mb-0">查看优先改进项和行动建议</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. 核心概念 -->
+            <section id="core-concepts" class="mb-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fa fa-lightbulb-o"></i>3. 核心概念速查表</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th width="15%"><i class="fa fa-tag me-1"></i>术语</th>
+                                        <th width="20%">中文含义</th>
+                                        <th width="65%">通俗解释</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>CTQ</strong></td>
+                                        <td>关键质量特性</td>
+                                        <td>影响产品质量的关键参数，如蛋白质含量、酸度、灌装净含量等。只有这些参数符合要求，产品质量才能得到保证。</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>K值</strong></td>
+                                        <td>质量损失系数</td>
+                                        <td>质量特性偏离目标值1个单位时，每件产品产生的经济损失。例如：K=20元/g²表示蛋白质含量偏离目标值1g，每件产品损失20元。</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>望目特性</strong></td>
+                                        <td>有固定目标值的特性</td>
+                                        <td>存在一个最佳目标值，偏离这个目标值（无论偏高还是偏低）都会产生损失。例如：蛋白质含量目标值3.1g/100g，太高或太低都不好。</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>望小特性</strong></td>
+                                        <td>数值越小越好的特性</td>
+                                        <td>理想值为0，数值越大，损失越大。例如：菌落总数、乳清析出率、杂质含量等。</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>望大特性</strong></td>
+                                        <td>数值越大越好的特性</td>
+                                        <td>理想值为无穷大，数值越小，损失越大。例如：保质期终点活菌数、产品保质期等。</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>非对称损失</strong></td>
+                                        <td>上下偏离损失不同</td>
+                                        <td>偏离目标值上下两侧的损失金额不同。最典型的例子是灌装净含量：少装违反国标面临罚款，损失大；多装只是增加原料成本，损失小。</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>CPK</strong></td>
+                                        <td>过程能力指数</td>
+                                        <td>衡量生产过程满足规格要求的能力。CPK≥1.33表示过程能力充足，99.99%的产品合格；1.0≤CPK<1.33表示过程能力一般；CPK<1.0表示过程能力不足，需要改进。</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>SNR</strong></td>
+                                        <td>信噪比</td>
+                                        <td>衡量过程抗干扰能力的指标。信噪比越高，说明过程的"信号（均值）"相对于"噪声（波动）"越强，过程越稳定，受原料、环境、操作等因素的影响越小。</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>PAF成本</strong></td>
+                                        <td>质量成本分类</td>
+                                        <td>将质量成本分为四类：预防成本、鉴定成本、内部故障成本（出厂前发现的不合格品损失）、外部故障成本（出厂后发现的不合格品损失）。</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>CCP</strong></td>
+                                        <td>关键控制点</td>
+                                        <td>HACCP体系中的关键控制点，指能够对一个或多个食品安全危害进行控制的步骤、环节或过程。这些点如果失控，会导致不可接受的健康风险。</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. CTQ管理 -->
+            <section id="module-ctq" class="mb-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fa fa-cogs"></i>4. CTQ关键质量特性管理</h4>
+                    </div>
+                    <div class="card-body">
+                        <section id="ctq-design">
+                            <h5><i class="fa fa-puzzle-piece text-primary me-2"></i>4.1 设计思路与合理性</h5>
+                            <p>CTQ是整个系统的<strong>基石与配置中枢</strong>，所有后续的K值计算、质量损失量化、目标值优化、改进分析都完全依赖于CTQ的准确配置。</p>
+
+                            <div class="design-note">
+                                <h6><i class="fa fa-lightbulb-o"></i> 设计合理性说明</h6>
+                                <p><strong>为什么采用"全局通用+品项专属"的两级配置体系？</strong></p>
+                                <p>酸奶工厂通常生产多个品项（原味、草莓、蓝莓等），大部分CTQ（如酸度、菌落总数、冷链温度）所有品项的要求都是一样的，只有少数CTQ（如蛋白质含量、甜度）不同品项有不同要求。</p>
+                                <p>如果每个品项都单独配置所有CTQ，会产生大量重复工作，管理效率低下。两级配置体系既保证了管理效率（通用配置一次配置，所有品项共享），又满足了多品项生产的差异化需求（品项专属配置自动覆盖通用配置）。</p>
+                                <hr class="my-2">
+                                <p><strong>为什么要原生支持非对称损失模型？</strong></p>
+                                <p>灌装净含量是酸奶行业最典型的非对称损失特性，也是影响工厂成本的最大因素之一。传统田口软件只能处理对称损失，无法准确计算灌装净含量的质量损失。</p>
+                                <p>本系统原生支持非对称损失模型，分别存储上下限的损失系数和损失金额，完美解决了这一行业痛点。</p>
+                                <hr class="my-2">
+                                <p><strong>为什么要引入FMEA严重度和CCP标识？</strong></p>
+                                <p>食品行业是高风险行业，安全永远是第一位的。有些质量特性（如菌落总数）即使造成的经济损失不大，但一旦失控会带来严重的安全风险和法律后果。</p>
+                                <p>引入FMEA严重度和CCP标识，能够在损失计算和改进优先级排序中体现风险因素，确保高风险特性得到优先关注和处理。</p>
+                            </div>
+                        </section>
+
+                        <section id="ctq-functions" class="mt-4">
+                            <h5><i class="fa fa-list-ul text-primary me-2"></i>4.2 核心功能</h5>
+                            <div class="row text-center g-4">
+                                <div class="col-md-4">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <i class="fa fa-plus-circle fa-3x text-primary mb-3"></i>
+                                            <h6>CTQ增删改查</h6>
+                                            <p class="text-muted mb-0">支持CTQ配置的添加、编辑、删除和查询</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <i class="fa fa-file-excel-o fa-3x text-success mb-3"></i>
+                                            <h6>批量导入导出</h6>
+                                            <p class="text-muted mb-0">支持Excel批量导入导出，方便大量配置</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <i class="fa fa-refresh fa-3x text-info mb-3"></i>
+                                            <h6>默认配置重置</h6>
+                                            <p class="text-muted mb-0">一键重置为酸奶行业国标默认配置</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <i class="fa fa-balance-scale fa-3x text-warning mb-3"></i>
+                                            <h6>非对称损失支持</h6>
+                                            <p class="text-muted mb-0">完美支持灌装净含量等非对称损失特性</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <i class="fa fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                                            <h6>FMEA风险分级</h6>
+                                            <p class="text-muted mb-0">支持1-10级FMEA严重度分级管理</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <i class="fa fa-toggle-on fa-3x text-primary mb-3"></i>
+                                            <h6>启用/禁用控制</h6>
+                                            <p class="text-muted mb-0">只有启用的CTQ才会参与损失计算</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section id="ctq-usage" class="mt-4">
+                            <h5><i class="fa fa-play-circle text-primary me-2"></i>4.3 使用流程</h5>
+                            <ol>
+                                <li><strong>查看默认配置</strong>：系统预置了酸奶行业7个核心CTQ的国标配置，包括：
+                                    <ul class="mt-2">
+                                        <li>蛋白质含量（望目，CCP）</li>
+                                        <li>滴定酸度（望目，CCP）</li>
+                                        <li>灌装净含量（望目，非对称损失）</li>
+                                        <li>菌落总数（望小，CCP，严重度10）</li>
+                                        <li>乳清析出率（望小）</li>
+                                        <li>保质期终点活菌数（望大，CCP）</li>
+                                        <li>冷链运输温度（望小，CCP）</li>
+                                    </ul>
+                                </li>
+                                <li><strong>添加品项专属配置</strong>：如果某个品项的CTQ要求与全局不同，点击"添加CTQ"按钮，选择对应的品项，填写参数。</li>
+                                <li><strong>批量导入配置</strong>：如果有大量CTQ需要配置，点击"下载模板"，填写所有参数后，点击"批量导入"。</li>
+                                <li><strong>启用/禁用CTQ</strong>：对于不需要监控的CTQ，可以将其禁用，禁用的CTQ不会参与损失计算。</li>
+                            </ol>
+                        </section>
+
+                        <section id="ctq-fields" class="mt-4">
+                            <h5><i class="fa fa-table text-primary me-2"></i>4.4 核心字段说明</h5>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr><th width="20%">字段名称</th><th width="15%">数据类型</th><th width="65%">说明</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>品项</td><td>字符串</td><td>产品名称，为空表示全局通用配置。例如："原味酸奶"、"草莓酸奶"。</td></tr>
+                                        <tr><td>CTQ名称</td><td>字符串</td><td>质量特性名称，必须唯一。例如："蛋白质含量"、"灌装净含量"。</td></tr>
+                                        <tr><td>特性类型</td><td>枚举</td><td>望目(nominal)、望小(smaller)、望大(larger)。</td></tr>
+                                        <tr><td>目标值m</td><td>数值</td><td>工艺目标值，是所有计算的基础。例如：蛋白质含量3.1g/100g。</td></tr>
+                                        <tr><td>上规格限USL</td><td>数值</td><td>国标允许的最大值。例如：蛋白质含量3.5g/100g。</td></tr>
+                                        <tr><td>下规格限LSL</td><td>数值</td><td>国标允许的最小值。例如：蛋白质含量2.9g/100g。</td></tr>
+                                        <tr><td>是否非对称损失</td><td>是/否</td><td>偏离目标值上下两侧的损失是否不同。灌装净含量必须设为"是"。</td></tr>
+                                        <tr><td>功能界限Δ0</td><td>数值</td><td>产品丧失功能的偏差，一般等于国标公差。例如：蛋白质含量0.6g。</td></tr>
+                                        <tr><td>报废损失A0</td><td>数值</td><td>产品超出功能界限时的单件报废损失，包括原料、人工、能源等全部成本。</td></tr>
+                                        <tr><td>内控公差Δ</td><td>数值</td><td>工厂内部控制的公差，一般为国标公差的1/2-1/3。例如：蛋白质含量0.2g。</td></tr>
+                                        <tr><td>返工损失A</td><td>数值</td><td>产品超出内控公差但未超出国标时的单件返工损失。</td></tr>
+                                        <tr><td>上限损失A_upper</td><td>数值</td><td>非对称损失时，超出上限的单件损失。</td></tr>
+                                        <tr><td>下限损失A_lower</td><td>数值</td><td>非对称损失时，低于下限的单件损失。</td></tr>
+                                        <tr><td>FMEA严重度</td><td>整数(1-10)</td><td>该特性失控时的严重程度，10级最严重。菌落总数应设为10级。</td></tr>
+                                        <tr><td>是否CCP</td><td>是/否</td><td>是否为HACCP关键控制点。</td></tr>
+                                        <tr><td>生产环节</td><td>字符串</td><td>该特性所属的生产环节，如"原料标准化"、"发酵环节"、"灌装环节"。</td></tr>
+                                        <tr><td>国标编号</td><td>字符串</td><td>执行的国家标准编号，如"GB 19302-2010"。</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. K值计算 -->
+            <section id="module-k" class="mb-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fa fa-calculator"></i>5. K值损失系数计算</h4>
+                    </div>
+                    <div class="card-body">
+                        <section id="k-design">
+                            <h5><i class="fa fa-puzzle-piece text-primary me-2"></i>5.1 设计思路与合理性</h5>
+                            <p>K值是田口质量损失函数的<strong>灵魂参数</strong>，它量化了"质量特性偏离目标值1个单位时，每件产品产生的经济损失"。K值的准确性直接决定了整个系统质量损失量化的可信度。</p>
+
+                            <div class="design-note">
+                                <h6><i class="fa fa-lightbulb-o"></i> 设计合理性说明</h6>
+                                <p><strong>为什么采用双路径计算策略？</strong></p>
+                                <p>K值计算有两种常用方法：方法一使用<strong>功能界限(Δ₀)</strong>和<strong>报废损失(A₀)</strong>计算；方法二使用<strong>内控公差(Δ)</strong>和<strong>返工损失(A)</strong>计算。系统采用"优先使用方法二，其次使用方法一"的双路径计算策略，既保证了准确性，又降低了使用门槛。</p>
+                                <hr class="my-2">
+                                <p><strong>为什么要引入FMEA风险加权？</strong></p>
+                                <p>传统的K值计算只考虑直接经济损失，忽略了安全风险、合规风险和品牌声誉损失。系统引入FMEA严重度系数，对高风险特性的K值进行放大，使得质量损失的量化更加全面和准确。</p>
+                                <hr class="my-2">
+                                <p><strong>为什么要实现K值自动补全？</strong></p>
+                                <p>如果要求用户必须先计算所有CTQ的K值才能进行损失计算，会大大增加系统的使用门槛。系统在损失计算时会自动检测缺失的K值，并使用CTQ配置中的参数自动计算，保证了业务流程的连续性。</p>
+                            </div>
+                        </section>
+
+                        <section id="k-functions" class="mt-4">
+                            <h5><i class="fa fa-list-ul text-primary me-2"></i>5.2 核心功能</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <ul class="list-group">
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>对称损失K值计算</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>非对称损失K值计算</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>FMEA风险加权自动应用</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="list-group">
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>计算结果预览</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>一键保存到CTQ配置</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>自动补全缺失的K值</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section id="k-usage" class="mt-4">
+                            <h5><i class="fa fa-play-circle text-primary me-2"></i>5.3 使用流程</h5>
+                            <ol>
+                                <li><strong>选择CTQ</strong>：在页面顶部的下拉列表中选择需要计算K值的CTQ。</li>
+                                <li><strong>确认参数</strong>：系统会自动加载CTQ配置中的损失参数（A0、Δ0、A、Δ、FMEA严重度等），如有错误可以直接修改。</li>
+                                <li><strong>计算K值</strong>：点击"计算K值"按钮，系统会根据参数自动计算K值。</li>
+                                <li><strong>预览结果</strong>：查看计算结果，确认无误后点击"保存K值"按钮，将K值保存到CTQ配置中。</li>
+                            </ol>
+
+                            <div class="screenshot-placeholder">
+                                <i class="fa fa-picture-o fa-4x mb-3"></i>
+                                <p class="fw-bold">K值计算页面截图：参数输入区 + 计算结果区</p>
+                            </div>
+                        </section>
+
+                        <section id="k-formulas" class="mt-4">
+                            <h5><i class="fa fa-superscript text-primary me-2"></i>5.4 核心计算公式</h5>
+
+                            <h6>5.4.1 对称损失K值</h6>
+                            <p>适用于望目和望小特性，偏离目标值上下两侧的损失相同。</p>
+                            <div class="formula"><strong>K = A / Δ²</strong></div>
+                            <ul>
+                                <li><strong>A</strong>：超出公差时的单件损失（元/件）</li>
+                                <li><strong>Δ</strong>：允许的公差（质量特性与目标值的最大偏差）</li>
+                            </ul>
+                            <p><strong>示例</strong>：蛋白质含量，返工损失A=0.8元/件，内控公差Δ=0.2g</p>
+                            <div class="formula">K = 0.8 / (0.2)² = 0.8 / 0.04 = <strong>20 元/g²</strong></div>
+
+                            <h6 class="mt-4">5.4.2 非对称损失K值</h6>
+                            <p>适用于灌装净含量等非对称损失特性，分别计算上下限K值。</p>
+                            <div class="formula">K_upper = A_upper / Δ_upper²<br>K_lower = A_lower / Δ_lower²</div>
+                            <ul>
+                                <li><strong>A_upper</strong>：超出上限的单件损失</li>
+                                <li><strong>A_lower</strong>：低于下限的单件损失</li>
+                                <li><strong>Δ_upper</strong>：上限公差（USL - m）</li>
+                                <li><strong>Δ_lower</strong>：下限公差（m - LSL）</li>
+                            </ul>
+                            <p><strong>示例</strong>：灌装净含量，目标值200g，USL=204.5g，LSL=195.5g，多装损失A_upper=0.6元，少装损失A_lower=1.2元</p>
+                            <div class="formula">K_upper = 0.6 / (4.5)² = 0.0296 元/g²<br>K_lower = 1.2 / (4.5)² = 0.0593 元/g²</div>
+
+                            <h6 class="mt-4">5.4.3 望大特性K值</h6>
+                            <p>望大特性的K值公式与望目/望小相反，因为望大特性的损失函数是L(y)=k/y²。</p>
+                            <div class="formula"><strong>K = A × Δ²</strong></div>
+
+                            <h6 class="mt-4">5.4.4 FMEA风险加权</h6>
+                            <p>计算出原始K值后，会根据FMEA严重度进行放大：</p>
+                            <div class="formula">调整后K值 = 原始K值 × FMEA严重度系数</div>
+
+                            <div class="table-responsive mt-3">
+                                <table class="table table-striped">
+                                    <thead><tr><th>FMEA严重度</th><th>风险等级</th><th>严重度系数</th><th>说明</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>10</td><td>极高风险</td><td>10.0</td><td>危及安全/合规</td></tr>
+                                        <tr><td>9</td><td>高风险</td><td>8.0</td><td>批量召回</td></tr>
+                                        <tr><td>8</td><td>高风险</td><td>6.0</td><td>批量客户投诉</td></tr>
+                                        <tr><td>7</td><td>中高风险</td><td>4.0</td><td>批次返工</td></tr>
+                                        <tr><td>6</td><td>中风险</td><td>2.0</td><td>挑选返工</td></tr>
+                                        <tr><td>5</td><td>中风险</td><td>1.5</td><td>轻微返工</td></tr>
+                                        <tr><td>4</td><td>低风险</td><td>1.2</td><td>不影响功能</td></tr>
+                                        <tr><td>3</td><td>低风险</td><td>1.0</td><td>外观轻微瑕疵</td></tr>
+                                        <tr><td>2</td><td>极低风险</td><td>0.8</td><td>无影响</td></tr>
+                                        <tr><td>1</td><td>无风险</td><td>0.5</td><td>无任何影响</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. 生产数据管理 -->
+            <section id="module-production" class="mb-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fa fa-database"></i>6. 生产数据管理</h4>
+                    </div>
+                    <div class="card-body">
+                        <section id="production-design">
+                            <h5><i class="fa fa-puzzle-piece text-primary me-2"></i>6.1 设计思路与合理性</h5>
+                            <p>生产数据是系统的<strong>输入</strong>，数据质量直接决定了分析结果的准确性。系统采用"分页读取+批量处理"的设计，支持百万级数据量的高效处理，同时提供完善的数据校验机制。</p>
+
+                            <div class="design-note">
+                                <h6><i class="fa fa-lightbulb-o"></i> 设计合理性说明</h6>
+                                <p><strong>为什么采用分页读取数据？</strong></p>
+                                <p>酸奶工厂每天会产生大量的质量检测数据，一个月的数据量可能达到数万条甚至数十万条。如果一次性将所有数据加载到内存中，会导致内存溢出，系统崩溃。</p>
+                                <p>系统采用分页读取的方式，每次从数据库读取1000条数据，处理完后再读取下一批，即使有百万级数据也能稳定运行。</p>
+                                <hr class="my-2">
+                                <p><strong>为什么要进行逐行校验？</strong></p>
+                                <p>生产数据通常由一线人员手工录入，难免会出现错误。系统在导入时对每一行数据进行详细校验，收集所有错误信息后一次性提示给用户，明确指出错误所在的行号和具体原因。</p>
+                                <hr class="my-2">
+                                <p><strong>为什么要自动计算生产周数和月份？</strong></p>
+                                <p>后续的数据分析和可视化需要按周、按月统计质量损失。系统根据生产日期自动计算生产周数和月份，既提高了效率，又保证了数据的一致性。</p>
+                            </div>
+                        </section>
+
+                        <section id="production-functions" class="mt-4">
+                            <h5><i class="fa fa-list-ul text-primary me-2"></i>6.2 核心功能</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <ul class="list-group">
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>生产数据的增删改查</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>Excel批量导入导出</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>逐行数据校验与错误提示</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>模拟数据生成（用于演示和测试）</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="list-group">
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>自动计算生产周数和月份</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>按批次、品项、CTQ筛选数据</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>数据导出为Excel和CSV格式</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>数据备份与恢复</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section id="production-usage" class="mt-4">
+                            <h5><i class="fa fa-play-circle text-primary me-2"></i>6.3 使用流程</h5>
+                            <ol>
+                                <li><strong>下载模板</strong>：点击"下载模板"按钮，获取标准Excel导入模板。</li>
+                                <li><strong>填写数据</strong>：按照模板要求填写生产批次、生产日期、品项、CTQ名称、实测值、批次数量等信息。
+                                    <div class="alert alert-info mt-2">
+                                        <i class="fa fa-info-circle"></i> <strong>注意：</strong>同一批次同一CTQ应导入多个样本数据（建议≥10个），以准确估计过程波动。CTQ名称必须与CTQ配置中的名称完全一致，包括大小写和空格。
+                                    </div>
+                                </li>
+                                <li><strong>导入数据</strong>：点击"批量导入"按钮，选择填写好的Excel文件。</li>
+                                <li><strong>查看和编辑数据</strong>：导入成功后，可以在列表中查看和编辑数据。</li>
+                            </ol>
+
+                            <div class="table-responsive mt-4">
+                                <h6><i class="fa fa-file-excel-o text-primary me-2"></i>导入模板字段说明</h6>
+                                <table class="table table-striped">
+                                    <thead><tr><th>字段名称</th><th>必填</th><th>说明</th><th>示例</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>生产批次号</td><td>✅</td><td>唯一标识一个生产批次</td><td>2026051001</td></tr>
+                                        <tr><td>生产日期</td><td>✅</td><td>格式：YYYY-MM-DD</td><td>2026-05-10</td></tr>
+                                        <tr><td>品项</td><td>✅</td><td>产品名称，与CTQ配置中的品项一致</td><td>原味酸奶</td></tr>
+                                        <tr><td>CTQ名称</td><td>✅</td><td>质量特性名称，与CTQ配置中的名称一致</td><td>蛋白质含量</td></tr>
+                                        <tr><td>实测值</td><td>✅</td><td>质量检测的实际数值</td><td>3.08</td></tr>
+                                        <tr><td>批次数量</td><td>✅</td><td>该批次的生产数量（件）</td><td>10000</td></tr>
+                                        <tr><td>生产线</td><td>❌</td><td>生产线名称</td><td>1号线</td></tr>
+                                        <tr><td>存储天数</td><td>❌</td><td>产品已存储的天数</td><td>7</td></tr>
+                                        <tr><td>存储温度</td><td>❌</td><td>产品存储的温度(℃)</td><td>6</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 7. 质量损失计算 -->
+            <section id="module-loss" class="mb-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fa fa-line-chart"></i>7. 质量损失计算</h4>
+                    </div>
+                    <div class="card-body">
+                        <section id="loss-design">
+                            <h5><i class="fa fa-puzzle-piece text-primary me-2"></i>7.1 设计思路与合理性</h5>
+                            <p>质量损失计算是系统的<strong>核心引擎</strong>，它将抽象的质量偏差转化为可量化的经济损失，是后续数据分析、目标优化和改进决策的基础。</p>
+
+                            <div class="design-note">
+                                <h6><i class="fa fa-lightbulb-o"></i> 设计合理性说明</h6>
+                                <p><strong>为什么要支持两种标准差计算方式？</strong></p>
+                                <p>标准差是衡量过程波动的重要指标，两种常用方式：本批标准差反映当前批次波动；长期合并标准差消除单批次异常，更反映长期能力。系统提供两种方式供选择。</p>
+                                <hr class="my-2">
+                                <p><strong>为什么要区分显性损失和隐性损失？</strong></p>
+                                <p>传统质量成本只计算显性损失，而隐性损失（品牌声誉、客户流失等）往往更大。系统引入隐性损失系数，让用户看到更全面的质量成本。</p>
+                                <hr class="my-2">
+                                <p><strong>为什么要使用数值积分计算非对称损失和望大特性？</strong></p>
+                                <p>对称望目特性有解析公式，但非对称损失和望大特性没有。系统采用数值积分（μ±6σ），并提供了降级方案保证计算稳定。</p>
+                            </div>
+                        </section>
+
+                        <section id="loss-functions" class="mt-4">
+                            <h5><i class="fa fa-list-ul text-primary me-2"></i>7.2 核心功能</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <ul class="list-group">
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>全量质量损失一键计算</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>支持本批标准差和长期合并标准差</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>对称损失和非对称损失计算</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>显性损失和隐性损失计算</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="list-group">
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>PAF质量成本自动分类</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>国标合规性自动判断</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>计算进度实时显示</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>自动清除缓存，更新所有页面</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section id="loss-usage" class="mt-4">
+                            <h5><i class="fa fa-play-circle text-primary me-2"></i>7.3 使用流程</h5>
+                            <ol>
+                                <li><strong>选择标准差类型</strong>：本批标准差（新产线）或长期合并标准差（成熟产线）。</li>
+                                <li><strong>开始计算</strong>：点击"开始计算"按钮，系统显示进度。</li>
+                                <li><strong>查看结果</strong>：计算完成后自动跳转到损失分析页面。</li>
+                            </ol>
+                        </section>
+
+                        <section id="loss-formulas" class="mt-4">
+                            <h5><i class="fa fa-superscript text-primary me-2"></i>7.4 核心计算公式</h5>
+
+                            <h6>7.4.1 望目特性对称损失</h6>
+                            <div class="formula">单位期望损失 = K × (σ² + (μ − m)²)</div>
+                            <p><strong>示例</strong>：蛋白质含量，K=20元/g²，σ=0.08g，μ=3.05g，m=3.1g</p>
+                            <div class="formula">E[L] = 20 × (0.08² + 0.05²) = 0.178 元/件</div>
+
+                            <h6 class="mt-4">7.4.2 望目特性非对称损失</h6>
+                            <div class="formula">E[L] = ∫ L(y)·f(y) dy &nbsp; (数值积分)</div>
+
+                            <h6 class="mt-4">7.4.3 望小特性损失</h6>
+                            <div class="formula">E[L] = K × (μ² + σ²)</div>
+
+                            <h6 class="mt-4">7.4.4 望大特性损失</h6>
+                            <div class="formula">E[L] ≈ K / μ² (近似) 或数值积分</div>
+
+                            <h6 class="mt-4">7.4.5 批次总损失</h6>
+                            <div class="formula">批次总损失 = 单位期望损失 × 批次数量<br>含隐性 = 批次总损失 × 隐性系数</div>
+
+                            <h6 class="mt-4">7.4.6 长期合并标准差</h6>
+                            <div class="formula">S<sub>p</sub> = √[ Σ((n<sub>i</sub>−1)·S<sub>i</sub>²) / Σ(n<sub>i</sub>−1) ]</div>
+
+                            <div class="design-note mt-3">
+                                <h6><i class="fa fa-info-circle"></i> 补充：过程能力指数 CPK</h6>
+                                <div class="formula">CPK = min( (USL−μ)/3σ , (μ−LSL)/3σ )</div>
+                                <p>CPK≥1.33 能力充足，1.0≤CPK＜1.33 能力尚可，CPK＜1.0 能力不足。</p>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 8. 目标值优化 -->
+            <section id="module-target" class="mb-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fa fa-bullseye"></i>8. 目标值优化</h4>
+                    </div>
+                    <div class="card-body">
+                        <section id="target-design">
+                            <h5><i class="fa fa-puzzle-piece text-primary me-2"></i>8.1 设计思路与合理性</h5>
+                            <p>目标值优化是系统的<strong>价值核心</strong>，它帮助工厂找到"质量与成本的最佳平衡点"。</p>
+
+                            <div class="design-note">
+                                <h6><i class="fa fa-lightbulb-o"></i> 设计合理性说明</h6>
+                                <p><strong>为什么采用阶梯式递进的方法体系？</strong></p>
+                                <p>系统提供7种优化方法，形成从"合规保底"到"全局经济最优"的阶梯式递进体系，用户可根据数据成熟度选择。</p>
+                                <hr class="my-2">
+                                <p><strong>为什么要实现方法可用性自动检查？</strong></p>
+                                <p>每种方法都有前置条件，系统自动检查并显示可用状态和原因。</p>
+                                <hr class="my-2">
+                                <p><strong>为什么要为酸奶设计专属的货架期衰减法？</strong></p>
+                                <p>活菌数随时间指数衰减，温度越高衰减越快。系统基于Arrhenius方程设计专属方法，确保保质期终点合规。</p>
+                            </div>
+                        </section>
+
+                        <section id="target-functions" class="mt-4">
+                            <h5><i class="fa fa-list-ul text-primary me-2"></i>8.2 核心功能</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <ul class="list-group">
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>7种目标值优化方法</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>方法可用性自动检查</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>智能推荐最佳方法</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>优化结果对比展示</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="list-group">
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>一键保存优化后的目标值到CTQ配置</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>优化效果预测</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>历史优化记录</li>
+                                        <li class="list-group-item"><i class="fa fa-check-circle text-success me-2"></i>多场景对比分析</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section id="target-methods" class="mt-4">
+                            <h5><i class="fa fa-list-alt text-primary me-2"></i>8.3 7种优化方法详解</h5>
+                            <div class="accordion" id="methodAccordion">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header"><button class="accordion-button" data-bs-toggle="collapse" data-bs-target="#method1">方法1：国标约束保底法</button></h2>
+                                    <div id="method1" class="accordion-collapse collapse show" data-bs-parent="#methodAccordion">
+                                        <div class="accordion-body">
+                                            <p><strong>核心目标</strong>：合规保底</p>
+                                            <p><strong>适用场景</strong>：新产线、数据不足30组</p>
+                                            <div class="formula">最优目标值 = (USL + LSL) / 2</div>
+                                            <p>优点：零门槛，100%理论合规。缺点：不考虑实际波动。</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#method2">方法2：CPK过程能力反推法</button></h2>
+                                    <div id="method2" class="accordion-collapse collapse">
+                                        <div class="accordion-body">
+                                            <p><strong>核心目标</strong>：确保批次合规</p>
+                                            <div class="formula">安全偏移量 = 目标CPK × 3σ<br>最优目标值限制在 [LSL+偏移量, USL-偏移量]</div>
+                                            <p>CPK=1.33时，可保证99.99%批次合规。</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#method3">方法3：SN信噪比稳健优化法</button></h2>
+                                    <div id="method3" class="accordion-collapse collapse">
+                                        <div class="accordion-body">
+                                            <p><strong>核心目标</strong>：最大化过程稳健性</p>
+                                            <p>望目特性直接使用原设计目标值m；望小特性为0；望大特性取最大值。</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#method4">方法4：CPK+SN双约束联合优化法</button></h2>
+                                    <div id="method4" class="accordion-collapse collapse">
+                                        <div class="accordion-body">
+                                            <p><strong>核心目标</strong>：兼顾合规与稳健</p>
+                                            <p>在满足CPK安全区间的前提下，选择最接近原目标值m的点。</p>
+                                            <p>行业公认最佳实践。</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#method5">方法5：贝叶斯全局优化法</button></h2>
+                                    <div id="method5" class="accordion-collapse collapse">
+                                        <div class="accordion-body">
+                                            <p><strong>核心目标</strong>：全局最小化质量损失</p>
+                                            <div class="formula">最小化 E[L] = k × (σ² + (μ − t)²)</div>
+                                            <p>遍历规格范围内的候选目标值，找到使期望损失最小的t。</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#method6">方法6：Arrhenius货架期衰减动态法</button></h2>
+                                    <div id="method6" class="accordion-collapse collapse">
+                                        <div class="accordion-body">
+                                            <p><strong>核心目标</strong>：确保保质期终点合规</p>
+                                            <div class="formula">出厂目标值 = LSL × exp(温度系数 × (实际温度-标准温度) × (保质期天数/30))</div>
+                                            <p>酸奶专属，考虑冷链温度对活菌数衰减的影响。</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h6 class="mt-4"><i class="fa fa-magic text-primary me-2"></i>智能推荐逻辑</h6>
+                            <ol>
+                                <li>活菌数优先使用方法6</li>
+                                <li>CCP关键控制点优先使用方法4</li>
+                                <li>已有准确K值的望目特性使用方法5</li>
+                                <li>有充足数据使用方法2，否则兜底使用方法1</li>
+                            </ol>
+                        </section>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 9. 可视化 -->
+            <section id="module-visualization" class="mb-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fa fa-pie-chart"></i>9. 数据分析可视化</h4>
+                    </div>
+                    <div class="card-body">
+                        <section id="visualization-design">
+                            <h5><i class="fa fa-puzzle-piece text-primary me-2"></i>9.1 设计思路与合理性</h5>
+                            <p>数据分析可视化是系统的<strong>窗口</strong>，它将复杂的质量数据转化为直观的图表和指标。</p>
+
+                            <div class="design-note">
+                                <h6><i class="fa fa-lightbulb-o"></i> 设计合理性说明</h6>
+                                <p><strong>为什么采用"后端聚合+前端渲染"的架构？</strong></p>
+                                <p>所有复杂的数据聚合和计算都在后端完成，前端只负责渲染图表，保证页面响应速度。</p>
+                                <hr class="my-2">
+                                <p><strong>为什么要实现多层级缓存？</strong></p>
+                                <p>系统实现了页面级缓存(60s)、API级缓存(30s)和查询字符串缓存，大幅提升加载速度。</p>
+                                <hr class="my-2">
+                                <p><strong>为什么要重点展示隐性损失和PAF成本？</strong></p>
+                                <p>帮助用户看到更全面的质量成本，发现真正的改进机会。</p>
+                            </div>
+                        </section>
+
+                        <section id="visualization-charts" class="mt-4">
+                            <h5><i class="fa fa-bar-chart text-primary me-2"></i>9.2 核心图表说明</h5>
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title"><i class="fa fa-dashboard text-primary me-2"></i>仪表盘</h6>
+                                            <ul class="mb-0">
+                                                <li>CTQ损失占比饼图</li>
+                                                <li>品项损失柱状图</li>
+                                                <li>月度趋势折线图</li>
+                                                <li>生产环节损失分布</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title"><i class="fa fa-line-chart text-primary me-2"></i>损失分析</h6>
+                                            <ul class="mb-0">
+                                                <li>周损失趋势</li>
+                                                <li>过程能力分析表（CPK/PPK/CPM）</li>
+                                                <li>SPC异常预警</li>
+                                                <li>损失明细表</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title"><i class="fa fa-tasks text-primary me-2"></i>改进建议</h6>
+                                            <ul class="mb-0">
+                                                <li>改进优先级列表</li>
+                                                <li>智能改进建议卡片</li>
+                                                <li>改进效果跟踪</li>
+                                                <li>ROI投资回报分析</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title"><i class="fa fa-bullseye text-primary me-2"></i>目标值优化</h6>
+                                            <ul class="mb-0">
+                                                <li>优化前后对比图</li>
+                                                <li>损失预测曲线</li>
+                                                <li>多场景对比分析</li>
+                                                <li>历史优化记录</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section id="visualization-filter" class="mt-4">
+                            <h5><i class="fa fa-filter text-primary me-2"></i>9.3 表格筛选功能（新增详解）</h5>
+                            <p>系统中所有数据表格均内置了<strong>智能筛选栏</strong>，支持多维度快速定位数据。</p>
+                            <div class="row g-3 mt-3">
+                                <div class="col-md-4">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fa fa-search fa-2x text-primary mb-2"></i>
+                                            <h6>文本搜索</h6>
+                                            <p class="text-muted mb-0">输入批次号、品项等关键词实时过滤</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fa fa-list-alt fa-2x text-primary mb-2"></i>
+                                            <h6>下拉筛选</h6>
+                                            <p class="text-muted mb-0">自动提取唯一值生成下拉菜单</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fa fa-eraser fa-2x text-primary mb-2"></i>
+                                            <h6>一键清除</h6>
+                                            <p class="text-muted mb-0">点击"清除筛选"按钮重置所有条件</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 10. 改进措施指导 -->
+            <section id="module-improvement" class="mb-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fa fa-tasks"></i>10. 改进措施指导</h4>
+                    </div>
+                    <div class="card-body">
+                        <section id="improvement-design">
+                            <h5><i class="fa fa-puzzle-piece text-primary me-2"></i>10.1 设计思路与合理性</h5>
+                            <p>改进措施指导是系统的<strong>闭环输出与价值落地环节</strong>，将分析结果转化为可执行、可跟踪的改进建议。</p>
+
+                            <div class="design-note">
+                                <h6><i class="fa fa-lightbulb-o"></i> 设计合理性说明</h6>
+                                <p><strong>为什么采用三维度优先级评分模型？</strong></p>
+                                <p>综合考虑损失金额、FMEA严重度和过程能力，确保有限资源投入到最有价值、最紧迫的改进上。</p>
+                                <hr class="my-2">
+                                <p><strong>为什么要生成针对性的改进建议？</strong></p>
+                                <p>基于当前数据生成具体建议，明确告诉用户"问题是什么"、"应该怎么做"。</p>
+                                <hr class="my-2">
+                                <p><strong>为什么要形成PDCA闭环？</strong></p>
+                                <p>系统覆盖计划、执行、检查、处理的全流程，持续改进。</p>
+                            </div>
+                        </section>
+
+                        <section id="improvement-priority" class="mt-4">
+                            <h5><i class="fa fa-sort-amount-desc text-primary me-2"></i>10.2 三维度改进优先级评分模型</h5>
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead><tr><th>维度</th><th>评分标准</th><th>分值</th></tr></thead>
+                                    <tbody>
+                                        <tr><td rowspan="3"><strong>损失金额占比</strong></td><td>占总损失≥40%</td><td>3分</td></tr>
+                                        <tr><td>15%-40%</td><td>2分</td></tr>
+                                        <tr><td>&lt;15%</td><td>1分</td></tr>
+                                        <tr><td rowspan="3"><strong>FMEA严重度</strong></td><td>≥8级</td><td>3分</td></tr>
+                                        <tr><td>5-7级</td><td>2分</td></tr>
+                                        <tr><td>&lt;5级</td><td>1分</td></tr>
+                                        <tr><td rowspan="3"><strong>过程能力(CPK)</strong></td><td>&lt;1.0</td><td>3分</td></tr>
+                                        <tr><td>1.0-1.33</td><td>2分</td></tr>
+                                        <tr><td>≥1.33</td><td>1分</td></tr>
+                                    </tbody>
+                                </table>
+                                <p>总分≥8极高优先级，6-7高优先级，4-5中优先级，＜4低优先级。</p>
+                            </div>
+                        </section>
+
+                        <section id="improvement-suggestions" class="mt-4">
+                            <h5><i class="fa fa-commenting-o text-primary me-2"></i>10.3 智能改进建议生成机制</h5>
+                            <p>系统共设计了5种类型的改进建议：首要改进目标、过程能力不足、高额质量损失、合规率偏低、CCP控制点能力不足。</p>
+
+                            <div class="row g-3 mt-3">
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title"><i class="fa fa-exclamation-triangle text-danger me-2"></i>首要改进目标</h6>
+                                            <p class="mb-0">针对优先级最高的CTQ，提供详细的问题分析和改进方向</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title"><i class="fa fa-line-chart text-warning me-2"></i>过程能力不足</h6>
+                                            <p class="mb-0">针对CPK<1.0的CTQ，分析波动原因并提出改进建议</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title"><i class="fa fa-money text-success me-2"></i>高额质量损失</h6>
+                                            <p class="mb-0">针对损失金额最大的CTQ，计算潜在节约空间</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title"><i class="fa fa-shield text-primary me-2"></i>CCP控制点能力不足</h6>
+                                            <p class="mb-0">针对CCP关键控制点，重点关注安全风险</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 11. 工作流程 -->
+            <section id="workflow" class="mb-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fa fa-sitemap"></i>11. 系统整体工作流程</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="screenshot-placeholder">
+                            <i class="fa fa-sitemap fa-4x mb-3"></i>
+                            <p class="fw-bold">系统整体工作流程图</p>
+                        </div>
+
+                        <ol class="mt-4">
+                            <li><strong>系统初始化</strong>：登录系统，重置为默认国标CTQ配置，根据工厂实际情况调整参数。</li>
+                            <li><strong>基础配置</strong>：添加品项专属CTQ配置，计算并保存每个CTQ的K值。</li>
+                            <li><strong>数据采集</strong>：每天导入生产检测数据，校验数据质量。</li>
+                            <li><strong>质量分析</strong>：每周执行一次质量损失计算，查看仪表盘和损失分析。</li>
+                            <li><strong>优化改进</strong>：查看改进建议，确定优先改进项，使用目标值优化模块调整工艺参数，实施改进措施。</li>
+                            <li><strong>效果验证</strong>：重新计算质量损失，对比改进前后，将有效措施标准化。</li>
+                            <li><strong>持续改进</strong>：回到步骤3，进入下一个循环。</li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 12. 最佳实践 -->
+            <section id="best-practices" class="mb-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fa fa-star"></i>12. 最佳实践指南</h4>
+                    </div>
+                    <div class="card-body">
+                        <h5><i class="fa fa-industry text-primary me-2"></i>12.1 按工厂发展阶段使用系统</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead><tr><th>发展阶段</th><th>主要目标</th><th>推荐方法</th><th>关注指标</th></tr></thead>
+                                <tbody>
+                                    <tr><td>投产初期</td><td>确保合规性</td><td>方法1（国标保底）</td><td>国标合规率</td></tr>
+                                    <tr><td>稳定生产期</td><td>提高过程稳定性</td><td>方法4（联合优化）</td><td>CPK、SNR</td></tr>
+                                    <tr><td>精益改进期</td><td>降低质量成本</td><td>方法5（贝叶斯优化）</td><td>总质量损失</td></tr>
+                                    <tr><td>所有阶段</td><td>确保保质期合规</td><td>方法6（货架期衰减）</td><td>保质期终点活菌数</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h5 class="mt-4"><i class="fa fa-refresh text-primary me-2"></i>12.2 关键参数校准频率</h5>
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fa fa-calculator fa-2x text-primary mb-2"></i>
+                                        <h6>K值</h6>
+                                        <p class="text-muted mb-0">每季度重新计算一次，原材料价格变化时立即更新</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fa fa-bullseye fa-2x text-primary mb-2"></i>
+                                        <h6>目标值</h6>
+                                        <p class="text-muted mb-0">每半年优化一次，工艺改进后立即更新</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fa fa-ruler fa-2x text-primary mb-2"></i>
+                                        <h6>内控公差</h6>
+                                        <p class="text-muted mb-0">每年评估一次</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fa fa-exclamation-triangle fa-2x text-primary mb-2"></i>
+                                        <h6>FMEA严重度</h6>
+                                        <p class="text-muted mb-0">每年重新评估一次</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fa fa-thermometer-half fa-2x text-primary mb-2"></i>
+                                        <h6>温度衰减系数</h6>
+                                        <p class="text-muted mb-0">每年根据实际冷链数据校准一次</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fa fa-database fa-2x text-primary mb-2"></i>
+                                        <h6>数据备份</h6>
+                                        <p class="text-muted mb-0">每天备份一次数据库</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h5 class="mt-4"><i class="fa fa-check-square-o text-primary me-2"></i>12.3 数据质量要求</h5>
+                        <ul>
+                            <li>每个批次每个CTQ至少检测<strong>10个样本</strong></li>
+                            <li>检测数据必须<strong>真实、准确</strong></li>
+                            <li>建议<strong>每天导入一次</strong>生产数据</li>
+                            <li>定期备份数据库</li>
+                        </ul>
+
+                        <h5 class="mt-4"><i class="fa fa-group text-primary me-2"></i>12.4 团队协作建议</h5>
+                        <ul>
+                            <li><strong>质量部门</strong>：负责CTQ配置、K值计算、损失分析和改进建议</li>
+                            <li><strong>生产部门</strong>：负责生产数据采集、改进措施实施</li>
+                            <li><strong>工艺部门</strong>：负责目标值优化、工艺参数调整</li>
+                            <li><strong>管理层</strong>：负责资源调配、改进计划审批</li>
+                            <li>每周召开一次质量改进会议</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 13. FAQ -->
+            <section id="faq" class="mb-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fa fa-question-circle"></i>13. 常见问题解答(FAQ)</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="accordion" id="faqAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header"><button class="accordion-button" data-bs-toggle="collapse" data-bs-target="#faq1">Q1：为什么我的K值计算结果为0？</button></h2>
+                                <div id="faq1" class="accordion-collapse collapse show">
+                                    <div class="accordion-body">检查损失金额A或A0是否为0，公差Δ或Δ0是否为0，以及特性类型是否正确。</div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#faq2">Q2：为什么计算损失时提示"无法找到对应的CTQ配置"？</button></h2>
+                                <div id="faq2" class="accordion-collapse collapse">
+                                    <div class="accordion-body">检查生产数据中的CTQ名称是否与CTQ配置中的名称完全一致，包括大小写和空格。</div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#faq3">Q3：为什么灌装净含量的K值上下限不同？</button></h2>
+                                <div id="faq3" class="accordion-collapse collapse">
+                                    <div class="accordion-body">因为灌装净含量是非对称损失特性：少装面临罚款和召回，损失大；多装只是增加原料成本，损失小。</div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#faq4">Q4：为什么活菌数的目标值比国标下限高很多？</button></h2>
+                                <div id="faq4" class="accordion-collapse collapse">
+                                    <div class="accordion-body">因为活菌数会随时间指数衰减，系统考虑了保质期内的衰减和冷链温度影响，确保保质期终点仍合规。</div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#faq5">Q5：为什么调整了目标值，损失没有明显变化？</button></h2>
+                                <div id="faq5" class="accordion-collapse collapse">
+                                    <div class="accordion-body">可能原因：未重新计算损失；目标值调整幅度不够；过程波动过大（σ太大），应优先降低波动。</div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#faq6">Q6：系统支持多少数据量？</button></h2>
+                                <div id="faq6" class="accordion-collapse collapse">
+                                    <div class="accordion-body">采用分页读取和批量处理技术，支持百万级生产数据的高效处理，损失计算可在1分钟内完成。</div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#faq7">Q7：如何备份系统数据？</button></h2>
+                                <div id="faq7" class="accordion-collapse collapse">
+                                    <div class="accordion-body">SQLite数据库文件为<code>yogurt_qlf.db</code>，位于系统根目录下，直接复制即可完成备份。建议每天备份一次。</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="text-center text-muted py-4">
+                <p><i class="fa fa-copyright"></i> 酸奶工厂田口QLF质量损失系统 V2.0 | 更新日期：2026年5月10日</p>
+                <p>如有问题请联系系统管理员或技术支持团队</p>
+            </footer>
+        </div>
+    </div>
+
+    <div class="scroll-top" id="scrollTop"><i class="fa fa-arrow-up"></i></div>
+
+    <script>
+        $(window).scroll(function() {
+            var scrollPos = $(document).scrollTop();
+            $('.sidebar .nav-link').each(function() {
+                var refElement = $($(this).attr('href'));
+                if (refElement.length && refElement.position().top <= scrollPos + 100 && refElement.position().top + refElement.height() > scrollPos) {
+                    $('.sidebar .nav-link').removeClass('active');
+                    $(this).addClass('active');
+                }
+            });
+            if (scrollPos > 300) $('#scrollTop').addClass('show');
+            else $('#scrollTop').removeClass('show');
+        });
+
+        $('.sidebar .nav-link').click(function(e) {
+            e.preventDefault();
+            var target = $(this).attr('href');
+            if ($(target).length) {
+                $('html, body').animate({ scrollTop: $(target).offset().top - 70 }, 300);
+            }
+        });
+
+        $('#scrollTop').click(function() {
+            $('html, body').animate({ scrollTop: 0 }, 300);
+        });
+
+        $(document).ready(function() {
+            $('.sidebar .nav-link').first().addClass('active');
+
+            // 为卡片添加进入动画
+            $('.card').each(function(index) {
+                $(this).css('opacity', '0').css('transform', 'translateY(20px)');
+                setTimeout(() => {
+                    $(this).animate({ opacity: 1, transform: 'translateY(0)' }, 500);
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>
