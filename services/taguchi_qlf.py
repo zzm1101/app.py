@@ -152,9 +152,13 @@ class TaguchiQLFCore:
         return round(min(cpu, cpl), 4)
 
     @staticmethod
-    def calc_cpm(y: np.ndarray, usl: float, lsl: float, target: float) -> float:
-        if len(y) < 30:
-            return np.nan
+    def calc_cpm(y: np.ndarray, usl: float, lsl: float, target: float):
+        """
+        计算 Cpm 指数（田口能力指数），要求样本数至少 2 个
+        返回 None 表示无法计算（数据不足）
+        """
+        if len(y) < 2:
+            return None
         mean = np.mean(y)
         var = np.var(y, ddof=1)
         bias_sq = (mean - target) ** 2

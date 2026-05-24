@@ -1,44 +1,31 @@
 # routes/spc_page.py
-# SPC控制图与过程能力分析模块（支持日期范围 + 能力趋势按周/月聚合）
-
 from flask import Blueprint, render_template, request, jsonify
 from models.models import ProductionData, CTQConfig, SPCRecord
 from services.spc_service import compute_control_chart
 from services.taguchi_qlf import TaguchiQLFCore
 from models.database import db
 from datetime import datetime
-import json
-import logging
-import numpy as np
-from collections import defaultdict
+import json, logging, numpy as np
+from collections import defaultdict, namedtuple
 from utils import normalize_product_item
 from config import Config
+from scipy import stats
 
 spc_bp = Blueprint('spc', __name__, url_prefix='/spc')
 logger = logging.getLogger(__name__)
+
+MAX_POINTS_FOR_FRONTEND = 3000   # 前端渲染最大点数
 
 
 @spc_bp.route('/')
 def index():
     ctqs = CTQConfig.query.filter_by(status="启用").all()
-    ctq_list = []
-    for ctq in ctqs:
-        ctq_list.append({
-            "ctq_id": ctq.ctq_id,
-            "ctq_name": ctq.ctq_name,
-            "product_item": ctq.product_item or "通用"
-        })
+    ctq_list = [{"ctq_id": c.ctq_id, "ctq_name": c.ctq_name, "product_item": c.product_item or "通用"} for c in ctqs]
     recent_records = SPCRecord.query.order_by(SPCRecord.id.desc()).limit(10).all()
-    all_product_items = db.session.query(ProductionData.product_item)\
-        .distinct()\
-        .filter(ProductionData.product_item.isnot(None))\
-        .all()
-    all_product_items = sorted([item[0] for item in all_product_items if item[0]])
-    return render_template('spc.html',
-                           ctq_list=ctq_list,
-                           recent_records=recent_records,
-                           active_page='spc',
-                           all_product_items=all_product_items)
+    all_items = db.session.query(ProductionData.product_item).distinct().filter(ProductionData.product_item.isnot(None)).all()
+    all_product_items = sorted([i[0] for i in all_items if i[0]])
+    return render_template('spc.html', ctq_list=ctq_list, recent_records=recent_records,
+                           active_page='spc', all_product_items=all_product_items)
 
 
 @spc_bp.route('/data')
@@ -51,11 +38,10 @@ def get_spc_data():
     product_item_param = request.args.get('product_item', '').strip()
     start_date = request.args.get('start_date', '')
     end_date = request.args.get('end_date', '')
-    if not ctq_id:
-        return jsonify({"error": "缺少CTQ参数"}), 400
-    if not product_item_param:
-        return jsonify({"error": "必须选择品项"}), 400
+    use_boxcox = request.args.get('use_boxcox', '0') == '1'
 
+    if not ctq_id or not product_item_param:
+        return jsonify({"error": "缺少CTQ或品项"}), 400
     ctq = CTQConfig.query.get(ctq_id)
     if not ctq:
         return jsonify({"error": "CTQ不存在"}), 404
@@ -75,32 +61,22 @@ def get_spc_data():
     if end_date:
         base_query = base_query.filter(ProductionData.produce_date <= end_date)
 
-    total_count = base_query.count()
-    if total_count == 0:
+    total = base_query.count()
+    if total == 0:
         return jsonify({"error": f"未找到品项【{product_item_param}】下 CTQ【{ctq.ctq_name}】的生产数据"}), 404
 
     MAX_BATCHES = Config.MAX_BATCHES_FOR_SPC
     MAX_SAMPLES = Config.MAX_SAMPLES_FOR_SPC
 
-    # 限制数据量
-    if total_count > MAX_SAMPLES and not start_date and not end_date:
-        # 按生产日期降序取最新的 MAX_SAMPLES 条记录
-        limited_query = base_query.order_by(ProductionData.produce_date.desc()).limit(MAX_SAMPLES)
-        all_data = limited_query.all()
-        warning = f"数据量超过{MAX_SAMPLES}条，仅分析最新的{len(all_data)}条记录"
+    if total > MAX_SAMPLES and not start_date and not end_date:
+        all_data = base_query.order_by(ProductionData.produce_date.desc()).limit(MAX_SAMPLES).all()
+        warning = f"数据量超过{MAX_SAMPLES}条，仅分析最新的{len(all_data)}条"
     else:
         if not start_date and not end_date:
-            # 按批次限制
-            recent_batches_subq = db.session.query(ProductionData.batch_no)\
-                .filter(
-                    ProductionData.ctq_id == ctq_id,
-                    ProductionData.product_item == norm_item
-                )\
-                .distinct()\
-                .order_by(ProductionData.produce_date.desc())\
-                .limit(MAX_BATCHES).subquery()
-            query = base_query.filter(ProductionData.batch_no.in_(recent_batches_subq))
-            all_data = query.order_by(ProductionData.produce_date, ProductionData.batch_no).all()
+            recent = db.session.query(ProductionData.batch_no).filter(
+                ProductionData.ctq_id == ctq_id, ProductionData.product_item == norm_item
+            ).distinct().order_by(ProductionData.produce_date.desc()).limit(MAX_BATCHES).subquery()
+            all_data = base_query.filter(ProductionData.batch_no.in_(recent)).order_by(ProductionData.produce_date, ProductionData.batch_no).all()
             warning = None
         else:
             all_data = base_query.order_by(ProductionData.produce_date, ProductionData.batch_no).all()
@@ -109,68 +85,66 @@ def get_spc_data():
     if ctq.feature_type == 'larger':
         original_len = len(all_data)
         all_data = [d for d in all_data if d.measured_value > 0]
-        if len(all_data) == 0:
+        if not all_data:
             return jsonify({"error": "实测值无正数，无法分析望大特性"}), 400
         if len(all_data) < original_len:
             logger.warning(f"过滤掉 {original_len - len(all_data)} 条非正值数据")
 
+    boxcox_lambda = None
+    if use_boxcox:
+        values = np.array([d.measured_value for d in all_data])
+        if np.any(values <= 0):
+            return jsonify({"error": "Box-Cox变换要求所有实测值 > 0"}), 400
+        try:
+            transformed_vals, boxcox_lambda = stats.boxcox(values)
+        except Exception as e:
+            return jsonify({"error": f"Box-Cox变换失败: {str(e)}"}), 400
+
+        def boxcox_val(x):
+            if x is None: return None
+            try:
+                return stats.boxcox(np.array([x]), lmbda=boxcox_lambda)[0][0]
+            except:
+                return None
+
+        usl, lsl, target = boxcox_val(usl), boxcox_val(lsl), boxcox_val(target)
+        DPoint = namedtuple('DPoint', ['batch_no', 'produce_date', 'measured_value', 'product_item', 'ctq_name'])
+        all_data = [DPoint(d.batch_no, d.produce_date, tv, d.product_item, d.ctq_name)
+                    for d, tv in zip(all_data, transformed_vals)]
+
     rules_str = request.args.get('rules', '')
     try:
-        active_rules = [int(r.strip()) for r in rules_str.split(',') if r.strip()] if rules_str else list(range(1, 9))
-    except ValueError:
-        active_rules = list(range(1, 9))
+        active_rules = [int(r.strip()) for r in rules_str.split(',') if r.strip()] if rules_str else list(range(1,9))
+    except:
+        active_rules = list(range(1,9))
 
-    result = compute_control_chart(
-        all_data, usl, lsl, target,
-        chart_type=chart_type,
-        rules_active=active_rules,
-        subgroup_size=None
-    )
+    result = compute_control_chart(all_data, usl, lsl, target, chart_type=chart_type, rules_active=active_rules)
     if "error" in result:
         return jsonify(result), 400
 
-    real_all_values = [d.measured_value for d in all_data]
-    real_mean = np.mean(real_all_values)
-    real_std = np.std(real_all_values, ddof=1) if len(real_all_values) > 1 else 0
-    result['all_values'] = [round(v, 4) for v in real_all_values]
+    real_all = [d.measured_value for d in all_data]
+    real_mean = np.mean(real_all)
+    real_std = np.std(real_all, ddof=1) if len(real_all) > 1 else 0
+
+    # 抽样保护前端
+    if len(real_all) > MAX_POINTS_FOR_FRONTEND:
+        idx = np.linspace(0, len(real_all)-1, MAX_POINTS_FOR_FRONTEND, dtype=int)
+        result['all_values'] = [round(real_all[i], 4) for i in idx]
+        result['warning'] = (result.get('warning', '') + ' 数据已抽样显示').strip()
+    else:
+        result['all_values'] = [round(v, 4) for v in real_all]
+
     result['mean'] = round(real_mean, 4)
     result['std_overall'] = round(real_std, 6)
-
-    max_val = max(real_all_values) if real_all_values else 0
-    scale_factor = 1
-    if max_val > 1e6:
-        scale_factor = 1e6
-        result['all_values'] = [round(v / scale_factor, 6) for v in result['all_values']]
-        result['mean'] = round(real_mean / scale_factor, 6)
-        result['std_overall'] = round(real_std / scale_factor, 6)
-        if result.get('std_within'):
-            result['std_within'] = round(result['std_within'] / scale_factor, 6)
-        if result.get('xbar'):
-            result['xbar'] = [round(x / scale_factor, 6) for x in result['xbar']]
-        if result.get('r'):
-            result['r'] = [round(r / scale_factor, 6) if r is not None else None for r in result['r']]
-        if result.get('usl'):
-            result['usl'] = round(result['usl'] / scale_factor, 6)
-        if result.get('lsl'):
-            result['lsl'] = round(result['lsl'] / scale_factor, 6)
-        if result.get('target'):
-            result['target'] = round(result['target'] / scale_factor, 6)
-        result['_scale'] = {"factor": scale_factor, "suffix": " (×10⁶)"}
-
     result['ctq_name'] = f"{product_item_param} - {ctq.ctq_name}"
     result['time_range'] = f"{result['dates'][0]} ~ {result['dates'][-1]}" if result.get('dates') else ""
     if warning:
-        result['warning'] = warning
+        result['warning'] = (result.get('warning', '') + ' ' + warning).strip()
 
     try:
-        record = SPCRecord(
-            ctq_id=ctq_id,
-            product_item=product_item_param,
-            chart_type=chart_type,
-            analysis_time=datetime.now(),
-            result_json=json.dumps(result, ensure_ascii=False)
-        )
-        db.session.add(record)
+        rec = SPCRecord(ctq_id=ctq_id, product_item=product_item_param, chart_type=chart_type,
+                        analysis_time=datetime.now(), result_json=json.dumps(result, ensure_ascii=False))
+        db.session.add(rec)
         db.session.commit()
     except Exception as e:
         logger.error(f"SPC历史记录保存失败: {e}")
@@ -180,16 +154,15 @@ def get_spc_data():
 
 @spc_bp.route('/capability_trend')
 def capability_trend():
-    """获取能力指数趋势数据（支持按批次/周/月聚合）"""
     ctq_id = request.args.get('ctq_id', type=int)
     product_item_param = request.args.get('product_item', '').strip()
     start_date = request.args.get('start_date', '')
     end_date = request.args.get('end_date', '')
     granularity = request.args.get('granularity', 'week')
+    use_boxcox = request.args.get('use_boxcox', '0') == '1'
 
     if not ctq_id or not product_item_param:
         return jsonify({"error": "缺少CTQ或品项"}), 400
-
     ctq = CTQConfig.query.get(ctq_id)
     if not ctq:
         return jsonify({"error": "CTQ不存在"}), 404
@@ -208,11 +181,28 @@ def capability_trend():
     if not rows:
         return jsonify({"error": "无数据"}), 404
 
-    usl = ctq.usl
-    lsl = ctq.lsl
-    target = ctq.target_m
-    calc = TaguchiQLFCore()
+    usl, lsl, target = ctq.usl, ctq.lsl, ctq.target_m
 
+    if use_boxcox:
+        values = np.array([r.measured_value for r in rows])
+        if np.any(values <= 0):
+            return jsonify({"error": "Box-Cox变换要求所有实测值 > 0"}), 400
+        try:
+            transformed_vals, lmbda = stats.boxcox(values)
+        except Exception as e:
+            return jsonify({"error": f"Box-Cox变换失败: {str(e)}"}), 400
+
+        def boxcox_val(x):
+            try:
+                return stats.boxcox(np.array([x]), lmbda=lmbda)[0][0]
+            except:
+                return None
+        usl, lsl, target = boxcox_val(usl), boxcox_val(lsl), boxcox_val(target)
+
+        TRow = namedtuple('TRow', ['batch_no', 'produce_date', 'measured_value'])
+        rows = [TRow(r.batch_no, r.produce_date, tv) for r, tv in zip(rows, transformed_vals)]
+
+    calc = TaguchiQLFCore()
     groups = defaultdict(list)
     group_label = {}
     for row in rows:
@@ -234,9 +224,7 @@ def capability_trend():
 
     sorted_keys = sorted(groups.keys())
     labels = [group_label[k] for k in sorted_keys]
-    ppk_list = []
-    cpm_list = []
-
+    ppk_list, cpm_list = [], []
     for key in sorted_keys:
         vals = groups[key]
         if len(vals) < 2:
@@ -249,10 +237,14 @@ def capability_trend():
         ppk_list.append(round(ppk, 4) if ppk is not None else None)
         cpm_list.append(round(cpm, 4) if cpm is not None else None)
 
+    # 将 NaN 转换为 None (JSON 兼容)
+    def clean_nan(lst):
+        return [None if isinstance(v, float) and np.isnan(v) else v for v in lst]
+
     return jsonify({
         "labels": labels,
-        "ppk": ppk_list,
-        "cpm": cpm_list,
+        "ppk": clean_nan(ppk_list),
+        "cpm": clean_nan(cpm_list),
         "target_cpk": 1.33
     })
 
@@ -274,27 +266,16 @@ def get_history():
                     time_range = f"{res['dates'][0]} ~ {res['dates'][-1]}"
         except:
             pass
-        data.append({
-            "id": rec.id,
-            "ctq_name": ctq_name,
-            "product_item": rec.product_item,
-            "chart_type": rec.chart_type,
-            "analysis_time": rec.analysis_time.strftime("%Y-%m-%d %H:%M"),
-            "time_range": time_range
-        })
-    return jsonify({
-        "data": data,
-        "total": pagination.total,
-        "pages": pagination.pages,
-        "current_page": page
-    })
+        data.append({"id": rec.id, "ctq_name": ctq_name, "product_item": rec.product_item,
+                     "chart_type": rec.chart_type, "analysis_time": rec.analysis_time.strftime("%Y-%m-%d %H:%M"),
+                     "time_range": time_range})
+    return jsonify({"data": data, "total": pagination.total, "pages": pagination.pages, "current_page": page})
 
 
 @spc_bp.route('/history/<int:record_id>')
 def get_history_detail(record_id):
     rec = SPCRecord.query.get_or_404(record_id)
     try:
-        result = json.loads(rec.result_json)
+        return jsonify(json.loads(rec.result_json))
     except:
         return jsonify({"error": "记录数据损坏"}), 500
-    return jsonify(result)

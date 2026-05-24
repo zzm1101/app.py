@@ -102,7 +102,7 @@ def loss_analysis():
                          r[0] and str(r[0]).strip() not in ('', 'None')]
     process_loss_data = [float(r[1] or 0) for r in process_loss_query if r[0] and str(r[0]).strip() not in ('', 'None')]
 
-    # 周趋势（保持原有周聚合，不修改）
+    # 周趋势
     weekly_trend = base_query.with_entities(
         LossResult.production_week,
         func.sum(LossResult.batch_total_loss).label('total_loss')
@@ -111,7 +111,7 @@ def loss_analysis():
     trend_weeks = [f"第{w[0]}周" for w in weekly_trend if w[0] is not None]
     trend_losses = [float(w[1] or 0) for w in weekly_trend if w[0] is not None]
 
-    # ========== 优化后的过程能力分析 ==========
+    # 过程能力分析
     capability_list = []
     calc = TaguchiQLFCore()
     item_ctq_pairs = base_query.with_entities(
@@ -140,12 +140,12 @@ def loss_analysis():
             lsl = ctq_config.lsl
             target_m = ctq_config.target_m
             ppk = calc.calc_ppk(y_values, usl, lsl)
-            cpm = calc.calc_cpm(y_values, usl, lsl, target_m)
+            cpm = calc.calc_cpm(y_values, usl, lsl, target_m)   # 可能返回 None
             capability_list.append({
                 "product_item": str(item).strip(),
                 "ctq_name": ctq_name,
                 "ppk": round(ppk, 4) if not np.isnan(ppk) and ppk is not None else "-",
-                "cpm": round(cpm, 4) if not np.isnan(cpm) and cpm is not None else "-",
+                "cpm": round(cpm, 4) if cpm is not None else "-",   # 修改这里
                 "data_count": len(y_values)
             })
 

@@ -4,7 +4,7 @@
 {% block extra_css %}
 <style>
     .left-panel .card { margin-bottom: 0.5rem; }
-    .rule-scroll { max-height: 180px; overflow-y: auto; }
+    .rule-scroll { /* 不再需要 */ }
     .chart-container { height: 350px; }
     .trend-container { height: 400px; }
     .trend-controls .btn-group, .trend-controls select { display: inline-block; vertical-align: middle; margin-right: 8px; }
@@ -29,7 +29,24 @@
     .capability-card .cap-value {
         font-weight: 700;
         font-size: 1.1rem;
-        /* 颜色由 JS 动态控制 */
+    }
+
+    /* 判异规则工具栏 */
+    .rule-bar {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 8px 12px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .rule-bar .form-check-inline {
+        margin-right: 1rem;
+        margin-bottom: 0;
+    }
+    .rule-bar .form-check-label {
+        font-size: 0.85rem;
+        user-select: none;
     }
 </style>
 {% endblock %}
@@ -51,7 +68,7 @@
 </div>
 
 <div class="row">
-    <!-- 左侧参数区 -->
+    <!-- 左侧参数区（精简） -->
     <div class="col-md-3 left-panel">
         <div class="card">
             <div class="card-header py-2 fw-bold"><i class="fa fa-cogs me-1" style="color: var(--primary);"></i>数据配置</div>
@@ -107,6 +124,10 @@
                     <div class="col-4"><label class="form-label">LSL</label><input type="number" step="any" id="lslInput" class="form-control form-control-sm"></div>
                     <div class="col-4"><label class="form-label">目标</label><input type="number" step="any" id="targetInput" class="form-control form-control-sm"></div>
                 </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="useBoxCox">
+                    <label class="form-check-label" for="useBoxCox">Box‑Cox变换</label>
+                </div>
                 <button class="btn btn-outline-secondary btn-sm w-100" id="resetSpecBtn"><i class="fa fa-refresh"></i> 重置为CTQ默认值</button>
             </div>
         </div>
@@ -140,28 +161,27 @@
                 </div>
             </div>
         </div>
-
-        <div class="card">
-            <div class="card-header py-2 d-flex justify-content-between align-items-center fw-bold">
-                <span><i class="fa fa-exclamation-triangle me-1" style="color: var(--primary);"></i>判异规则</span>
-                <button class="btn btn-sm btn-outline-secondary" id="resetRules">全选</button>
-            </div>
-            <div class="card-body py-1 rule-scroll">
-                <div class="form-check"><input class="form-check-input rule-check" type="checkbox" value="1" checked><label class="form-check-label">1. 超出3σ控制限</label></div>
-                <div class="form-check"><input class="form-check-input rule-check" type="checkbox" value="2" checked><label class="form-check-label">2. 连续9点同侧</label></div>
-                <div class="form-check"><input class="form-check-input rule-check" type="checkbox" value="3" checked><label class="form-check-label">3. 连续6点递增/递减</label></div>
-                <div class="form-check"><input class="form-check-input rule-check" type="checkbox" value="4" checked><label class="form-check-label">4. 连续14点交替</label></div>
-                <div class="form-check"><input class="form-check-input rule-check" type="checkbox" value="5" checked><label class="form-check-label">5. 连续3点中有2点在2σ外</label></div>
-                <div class="form-check"><input class="form-check-input rule-check" type="checkbox" value="6" checked><label class="form-check-label">6. 连续5点中有4点在1σ外</label></div>
-                <div class="form-check"><input class="form-check-input rule-check" type="checkbox" value="7" checked><label class="form-check-label">7. 连续15点在1σ内</label></div>
-                <div class="form-check"><input class="form-check-input rule-check" type="checkbox" value="8" checked><label class="form-check-label">8. 连续8点在1σ外</label></div>
-            </div>
-        </div>
+        <!-- 左侧不再包含判异规则 -->
     </div>
 
     <!-- 右侧图表区 -->
     <div class="col-md-9">
         <div id="dataWarning" class="warning-banner" style="display: none;"></div>
+
+        <!-- 判异规则工具栏（移至此处，位于控制图上方） -->
+        <div class="rule-bar mb-2">
+            <span class="fw-bold me-3">判异规则：</span>
+            <div class="form-check form-check-inline"><input class="form-check-input rule-check" type="checkbox" value="1" checked><label class="form-check-label">1. 超出3σ</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input rule-check" type="checkbox" value="2" checked><label class="form-check-label">2. 连续9点同侧</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input rule-check" type="checkbox" value="3" checked><label class="form-check-label">3. 连续6点升降</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input rule-check" type="checkbox" value="4" checked><label class="form-check-label">4. 连续14点交替</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input rule-check" type="checkbox" value="5" checked><label class="form-check-label">5. 3点中2点在2σ外</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input rule-check" type="checkbox" value="6" checked><label class="form-check-label">6. 5点中4点在1σ外</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input rule-check" type="checkbox" value="7" checked><label class="form-check-label">7. 连续15点在1σ内</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input rule-check" type="checkbox" value="8" checked><label class="form-check-label">8. 连续8点在1σ外</label></div>
+            <button class="btn btn-sm btn-outline-secondary ms-3" id="resetRules">全选</button>
+        </div>
+
         <ul class="nav nav-tabs" id="chartTabs" role="tablist">
             <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tabControl">控制图</a></li>
             <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabHist">过程能力</a></li>

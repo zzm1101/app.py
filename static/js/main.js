@@ -9,7 +9,7 @@ if (typeof echarts !== 'undefined') {
     });
 }
 
-// 设置 AJAX 全局 CSRF 请求头
+// 设置 AJAX 全局 CSRF 请求头（仅对 jQuery AJAX 有效）
 $.ajaxSetup({
     beforeSend: function(xhr, settings) {
         if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
@@ -134,3 +134,69 @@ function initDataTable(selector, options) {
     };
     return $(selector).DataTable($.extend(true, {}, defaults, options));
 }
+
+// ========== 影响因素开关（全局，已修复 CSRF 令牌携带） ==========
+function updateInfluenceUI(enabled) {
+    var links = document.querySelectorAll('.influence-link');
+    links.forEach(function(link) {
+        if (enabled) {
+            link.classList.remove('disabled', 'pe-none', 'btn-secondary');
+            link.removeAttribute('tabindex');
+            link.style.pointerEvents = '';
+            link.style.opacity = '';
+        } else {
+            link.classList.add('disabled', 'pe-none');
+            if (link.classList.contains('btn')) {
+                link.classList.add('btn-secondary');
+            }
+            link.setAttribute('tabindex', '-1');
+            link.style.pointerEvents = 'none';
+            link.style.opacity = '0.5';
+        }
+    });
+}
+
+(function() {
+    var toggle = document.getElementById('mlInfluenceToggle');
+    if (!toggle) return;
+
+    // 获取当前状态（GET 请求也附上令牌以保持统一）
+    fetch('/influence/api/settings/ml_influence', {
+        headers: { 'X-CSRFToken': csrf_token }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        toggle.checked = data.enabled;
+        updateInfluenceUI(data.enabled);
+    })
+    .catch(function() {
+        toggle.checked = false;
+        updateInfluenceUI(false);
+    });
+
+    // 切换事件
+    toggle.addEventListener('change', function() {
+        var enabled = this.checked;
+        fetch('/influence/api/settings/ml_influence', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrf_token        // 关键：手动携带 CSRF 令牌
+            },
+            body: JSON.stringify({ enabled: enabled })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.error) {
+                alert('切换失败：' + data.error);
+                this.checked = !enabled;
+            } else {
+                updateInfluenceUI(data.enabled);
+            }
+        }.bind(this))
+        .catch(function() {
+            alert('请求失败，请检查网络');
+            this.checked = !enabled;
+        }.bind(this));
+    });
+})();

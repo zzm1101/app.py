@@ -9,6 +9,8 @@ from routes.improvement import improvement_bp
 from routes.help import help_bp
 from routes.spc_page import spc_bp
 from routes.influence import influence_bp
+from routes.ml_tool import ml_tool_bp   # 新增导入
+from routes.simulate import simulate_bp
 def register_blueprints(app):
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(ctq_bp)
@@ -19,5 +21,6 @@ def register_blueprints(app):
     app.register_blueprint(improvement_bp)
     app.register_blueprint(help_bp)
     app.register_blueprint(spc_bp)
-    if app.config.get('ENABLE_ML_INFLUENCE', False):
-        app.register_blueprint(influence_bp)
+    app.register_blueprint(influence_bp)
+    app.register_blueprint(ml_tool_bp)   # 新增注册
+    app.register_blueprint(simulate_bp)

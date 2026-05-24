@@ -66,8 +66,6 @@ a { text-decoration:none; }
 }
 
 /* ===== 三重锁定：消灭模态框闪烁 ===== */
-
-/* 1. 禁用所有模态框的过渡和动画 */
 .modal,
 .modal *,
 .modal-dialog,
@@ -81,19 +79,80 @@ a { text-decoration:none; }
     animation-duration: 0s !important;
     transition-duration: 0s !important;
 }
-
-/* 2. 禁用模态框内卡片的悬停效果 */
 .modal .card,
 .modal .card:hover {
     transform: none !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
     transition: none !important;
 }
-
-/* 3. 强制模态框内容不随鼠标移动重绘 */
 .modal-open .modal {
     will-change: auto !important;
 }
 .modal-dialog {
     transform: none !important;
+}
+
+/* ========== SPC 新增样式（判异规则区域） ========== */
+.rule-area {
+    background: #f9fafb;
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+}
+.rule-area h6 {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: #1e293b;
+}
+.rule-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.5rem 1rem;
+}
+.rule-grid .form-check {
+    margin-bottom: 0;
+}
+.rule-grid .form-check-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #334155;
+}
+.btn-reset-rules {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    padding: 0.2rem 0.8rem;
+}
+
+/* 能力指标卡（动态变色） */
+.capability-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: var(--shadow-sm);
+    text-align: center;
+    padding: 0.6rem 0.4rem;
+    background: #f8fafc;
+    color: var(--text);
+    transition: background-color 0.2s;
+}
+.capability-card .cap-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.capability-card .cap-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* 趋势控件调整 */
+.trend-controls .btn-group, .trend-controls select {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+.trend-container {
+    height: 400px;
 }

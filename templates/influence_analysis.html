@@ -378,66 +378,58 @@ async function loadSHAPSummary(mt){
     if (shapChart) shapChart.dispose();
     shapChart = echarts.init(dom);
 
-    // 计算 SHAP 绝对值范围，避免 min == max 导致 visualMap 异常
     let maxAbs = Math.max(...points.map(p => Math.abs(p.x)));
-    if (maxAbs === 0) maxAbs = 1;  // 避免分母为零
+    if (maxAbs === 0) maxAbs = 1;
+    // 关键修复：如果 SHAP 值绝对值太小，强制设置一个最小范围，避免颜色全白
+    if (maxAbs < 0.1) maxAbs = 0.1;
 
     let visualMap = {
         min: -maxAbs,
         max: maxAbs,
         calculable: true,
-        inRange: { color: ['#3b82f6', '#f1f5f9', '#ef4444'] },
+        inRange: { color: ['#3b82f6', '#a855f7', '#ef4444'] },  // 蓝 -> 紫 -> 红，去掉白色
         outOfRange: { color: '#94a3b8' }
     };
 
-    // 找到约第 430 行左右的 shapChart.setOption({...})，替换成：
-shapChart.setOption({
-    tooltip: {
-        trigger: 'item',
-        formatter: function(params) {
-            let data = params.data;
-            return `<strong>${data.featureName}</strong><br/>SHAP值: ${data.shapValue.toFixed(4)}`;
-        }
-    },
-    xAxis: {
-        type: 'value',
-        name: 'SHAP值',
-        axisLabel: { formatter: sciFormatter },
-        splitLine: { lineStyle: { type: 'dashed' } }
-    },
-    yAxis: {
-        type: 'value',                       // 改为数值轴
-        name: '特征',
-        interval: 1,                        // 每个整数一个刻度
-        min: -0.5,                          // 留边距
-        max: featureNames.length - 0.5,
-        axisLabel: {
-            formatter: function(value) {   // 把数值索引转换成特征名
-                let idx = Math.round(value);
-                return featureNames[idx] || '';
+    shapChart.setOption({
+        tooltip: {
+            trigger: 'item',
+            formatter: function(params) {
+                let data = params.data;
+                return `<strong>${data.featureName}</strong><br/>SHAP值: ${data.shapValue.toFixed(4)}`;
             }
         },
-        axisTick: { show: false },
-        axisLine: { show: false },
-        splitLine: { show: false }
-    },
-    visualMap: {
-        min: -maxAbs,
-        max: maxAbs,
-        calculable: true,
-        inRange: { color: ['#3b82f6', '#ffffff', '#ef4444'] }  // 鲜明颜色
-    },
-    series: [{
-        type: 'scatter',
-        data: points.map(p => ({ value: [p.x, p.y], featureName: p.featureName, shapValue: p.shapValue })),
-        symbolSize: 5,          // 增大点尺寸
-        itemStyle: {
-            color: 'auto',
-            opacity: 0.8         // 提高不透明度
+        xAxis: {
+            type: 'value',
+            name: 'SHAP值',
+            axisLabel: { formatter: sciFormatter },
+            splitLine: { lineStyle: { type: 'dashed' } }
         },
-    emphasis: { scale: 1.5 }
-    }]
-});
+        yAxis: {
+            type: 'value',
+            name: '特征',
+            interval: 1,
+            min: -0.5,
+            max: featureNames.length - 0.5,
+            axisLabel: {
+                formatter: function(value) {
+                    let idx = Math.round(value);
+                    return featureNames[idx] || '';
+                }
+            },
+            axisTick: { show: false },
+            axisLine: { show: false },
+            splitLine: { show: false }
+        },
+        visualMap: visualMap,
+        series: [{
+            type: 'scatter',
+            data: points.map(p => ({ value: [p.x, p.y], featureName: p.featureName, shapValue: p.shapValue })),
+            symbolSize: 5,
+            itemStyle: { color: 'auto', opacity: 0.8 },
+            emphasis: { scale: 1.5 }
+        }]
+    });
 }
 
 /* ========== 部分依赖图（已修复横坐标） ========== */
@@ -454,12 +446,11 @@ async function loadPDP(mt, f){
     let d = await r.json(); if (d.error) { alert(d.error); return; }
     let dom = document.getElementById('pdpChart');
     if (pdpChart) pdpChart.dispose(); pdpChart = echarts.init(dom);
-    // 将数据转换为 [x, y] 点对
     let lineData = d.x.map((x, idx) => [x, d.y[idx]]);
     pdpChart.setOption({
         tooltip: { trigger: 'axis' },
-        xAxis: { type: 'value', name: f, axisLabel: { formatter: sciFormatter } },
-        yAxis: { type: 'value', name: '平均预测值', axisLabel: { formatter: sciFormatter } },
+        xAxis: { type: 'value', name: f, scale: true, axisLabel: { formatter: sciFormatter } },
+        yAxis: { type: 'value', name: '平均预测值', scale: true, axisLabel: { formatter: sciFormatter } },
         series: [{
             type: 'line',
             data: lineData,
@@ -482,20 +473,19 @@ async function loadDiagnostics(mt){
     let dom1 = document.getElementById('actualVsPredChart'); if (actualVsPredChart) actualVsPredChart.dispose(); actualVsPredChart = echarts.init(dom1);
     actualVsPredChart.setOption({
         tooltip: { trigger: 'axis', formatter: p => `实际:${sciFormatter(p[0].value[0])}<br/>预测:${sciFormatter(p[0].value[1])}` },
-        xAxis: { name: '实际值', type: 'value', axisLabel: { formatter: sciFormatter } },
-        yAxis: { name: '预测值', type: 'value', axisLabel: { formatter: sciFormatter } },
+        xAxis: { name: '实际值', type: 'value', scale: true, axisLabel: { formatter: sciFormatter } },
+        yAxis: { name: '预测值', type: 'value', scale: true, axisLabel: { formatter: sciFormatter } },
         series: [{ type: 'scatter', data: actual.map((a,i)=>[a,pred[i]]), symbolSize: 6, itemStyle: { color: '#6366f1' } }]
     });
     let dom2 = document.getElementById('residualChart'); if (residualChart) residualChart.dispose(); residualChart = echarts.init(dom2);
     residualChart.setOption({
         tooltip: { trigger: 'axis', formatter: p => `预测:${sciFormatter(p[0].value[0])}<br/>残差:${sciFormatter(p[0].value[1])}` },
-        xAxis: { name: '预测值', type: 'value', axisLabel: { formatter: sciFormatter } },
-        yAxis: { name: '残差', type: 'value', axisLabel: { formatter: sciFormatter } },
+        xAxis: { name: '预测值', type: 'value', scale: true, axisLabel: { formatter: sciFormatter } },
+        yAxis: { name: '残差', type: 'value', scale: true, axisLabel: { formatter: sciFormatter } },
         series: [{ type: 'scatter', data: pred.map((p,i)=>[p,res[i]]), symbolSize: 6, itemStyle: { color: '#ef4444' } }]
     });
     document.getElementById('diagnosticsMetrics').innerHTML = `R² = ${d.r2.toFixed(4)} &nbsp;|&nbsp; RMSE = ${sciFormatter(d.rmse)}`;
 }
-
 /* ========== 相关性热力图 ========== */
 async function loadCorrelation(){
     let r = await fetch(`/influence/api/correlation/${ctqId}?product_item=${encodeURIComponent(productItem)}`);

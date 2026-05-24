@@ -6,7 +6,8 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>{% block title %}酸奶金山工厂田口QLF质量损失系统{% endblock %}</title>
+    <title>{% block title %}酸奶事业部金山质量数字化平台 | QLF·SPC·ML{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
     <!-- 引入现代字体 -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <!-- 本地静态资源 -->
@@ -39,6 +40,7 @@
             color: var(--text);
             line-height: 1.5;
             padding-top: 60px;
+            font-size: 1rem;   /* ← 添加这一行，可整体放大文字 */
         }
 
         /* 导航栏 */
@@ -57,8 +59,8 @@
         .navbar-brand i { color: var(--primary-light); }
         .nav-link {
             padding: 0.4rem 0.8rem !important;
-            font-size: 0.875rem;
-            font-weight: 500;
+            font-size: 1rem;
+            font-weight: 700;
             border-radius: 8px;
             transition: all 0.2s;
             color: rgba(255,255,255,0.75) !important;
@@ -98,10 +100,10 @@
 
         /* 按钮 */
         .btn {
-            font-weight: 500;
+            font-weight: 550;
             border-radius: 8px;
             padding: 0.4rem 1rem;
-            font-size: 0.875rem;
+            font-size: 0.95rem;
             transition: all 0.2s;
         }
         .btn-primary {
@@ -279,9 +281,20 @@
     <!-- 顶部导航栏 -->
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('dashboard.index') }}">
-                <i class="fa fa-flask me-2"></i>酸奶金山工厂QLF系统
+            <!-- ========== 修改后的品牌区：LOGO + 两行文字 ========== -->
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard.index') }}" style="text-decoration:none; padding:0;">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" style="height:44px; width:auto; margin-right:12px; vertical-align:middle;">
+                <div style="line-height:1.3;">
+                    <div style="font-size:1.15rem; font-weight:700; color:#e0e7ff;">
+                        酸奶事业部金山质量数字化平台
+                    </div>
+                    <div style="font-size:0.72rem; opacity:0.85; font-weight:400; color:#cbd5e1;">
+                        田口QLF质量损失 · 过程能力SPC · 机器学习预测
+                    </div>
+                </div>
             </a>
+
+
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                     aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -296,7 +309,16 @@
                     <li class="nav-item"><a class="nav-link {% if active_page == 'loss' %}active{% endif %}" href="{{ url_for('loss.loss_analysis') }}"><i class="fa fa-pie-chart me-1"></i>损失分析</a></li>
                     <li class="nav-item"><a class="nav-link {% if active_page == 'improvement' %}active{% endif %}" href="{{ url_for('improvement.improvement_list') }}"><i class="fa fa-tasks me-1"></i>改进计划</a></li>
                     <li class="nav-item"><a class="nav-link {% if active_page == 'spc' %}active{% endif %}" href="{{ url_for('spc.index') }}"><i class="fa fa-sliders me-1"></i>SPC分析</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('ml_tool.index') }}"><i class="fa fa-cogs me-1"></i>通用预测</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('help.help_index') }}" target="_blank"><i class="fa fa-question-circle me-1"></i>帮助</a></li>
+
+                    <!-- ====== ML影响因素开关 ====== -->
+                    <li class="nav-item d-flex align-items-center ms-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="mlInfluenceToggle">
+                            <label class="form-check-label text-white-50 small" for="mlInfluenceToggle">ML分析</label>
+                        </div>
+                    </li>
                 </ul>
             </div>
         </div>

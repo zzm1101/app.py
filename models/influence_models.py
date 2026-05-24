@@ -1,4 +1,3 @@
-# models/influence_models.py
 from datetime import datetime
 from .database import db
 
@@ -56,8 +55,15 @@ class MlModelMetadata(db.Model):
     feature_encodings = db.Column(db.Text)
     onehot_columns = db.Column(db.Text)
     feature_medians = db.Column(db.Text)
-    training_params = db.Column(db.Text)   # 新增：存储训练参数配置（缺失值填充、标准化等）
+    training_params = db.Column(db.Text)
 
     __table_args__ = (
         db.Index('idx_mlm_ctq', 'ctq_id', 'product_item', 'model_type'),
     )
+
+# ========== 新增：通用系统设置模型（用于持久化开关等配置） ==========
+class SystemSetting(db.Model):
+    __tablename__ = 'system_settings'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    key = db.Column(db.String(100), unique=True, nullable=False)
+    value = db.Column(db.String(255), nullable=False)
