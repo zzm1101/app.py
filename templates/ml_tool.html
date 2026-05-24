@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>AI 回归建模平台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #2563eb; --primary-light: #eff6ff; --primary-dark: #1d4ed8;
+            --secondary: #64748b; --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+            --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0; --gray-300: #cbd5e1;
+            --gray-400: #94a3b8; --gray-500: #64748b; --gray-600: #475569; --gray-700: #334155;
+            --gray-800: #1e293b; --gray-900: #0f172a;
+            --card-radius: 16px;
+            --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);
+            --shadow-md: 0 10px 15px -3px rgba(0,0,0,0.1),0 4px 6px -2px rgba(0,0,0,0.05);
+            --transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+        }
+        * { box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding-top: 80px; padding-bottom: 40px; color: var(--gray-800); line-height: 1.6;
+        }
+        .navbar {
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); height: 70px;
+        }
+        .navbar-brand { font-weight: 700; color: var(--primary) !important; font-size: 1.35rem; letter-spacing: -0.02em; }
+        .navbar-brand i { font-size: 1.5rem; vertical-align: middle; }
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+            border-radius: 20px; font-size: 0.8rem; font-weight: 500; background: var(--primary-light); color: var(--primary);
+        }
+        .status-badge i { font-size: 0.6rem; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        .card {
+            background: rgba(255,255,255,0.9); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.8);
+            border-radius: var(--card-radius); box-shadow: var(--shadow); margin-bottom: 24px; transition: var(--transition); overflow: hidden;
+        }
+        .card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        .card-header {
+            background: linear-gradient(to right, var(--gray-50), white); border-bottom: 1px solid var(--gray-200);
+            font-weight: 600; font-size: 1rem; padding: 16px 24px; border-radius: var(--card-radius) var(--card-radius) 0 0 !important;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .card-header i { color: var(--primary); font-size: 1.1rem; margin-right: 8px; }
+        .card-body { padding: 24px; }
+        .nav-tabs { border-bottom: 2px solid var(--gray-200); margin-bottom: 20px; padding: 0 4px; }
+        .nav-tabs .nav-link {
+            color: var(--gray-500); border: none; font-weight: 500; padding: 12px 20px; margin-right: 8px;
+            border-radius: 12px 12px 0 0; transition: var(--transition); position: relative;
+        }
+        .nav-tabs .nav-link:hover { color: var(--primary); background: var(--primary-light); }
+        .nav-tabs .nav-link.active {
+            background: white; color: var(--primary); border-bottom: 3px solid var(--primary); box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+        }
+        .tab-content { padding-top: 8px; }
+        .upload-zone {
+            border: 2px dashed var(--gray-300); border-radius: 12px; padding: 32px; text-align: center;
+            background: linear-gradient(135deg, var(--gray-50) 0%, white 100%); cursor: pointer; transition: var(--transition);
+        }
+        .upload-zone:hover { border-color: var(--primary); background: var(--primary-light); transform: scale(1.01); }
+        .upload-zone i { font-size: 3rem; color: var(--gray-400); margin-bottom: 12px; transition: var(--transition); }
+        .upload-zone:hover i { color: var(--primary); transform: translateY(-4px); }
+        .upload-zone p { margin-bottom: 16px; color: var(--gray-500); }
+        .btn {
+            border-radius: 10px; font-weight: 500; padding: 10px 20px; transition: var(--transition); border: none; box-shadow: var(--shadow-sm);
+        }
+        .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; }
+        .btn-primary:hover { background: linear-gradient(135deg, var(--primary-dark) 0%, #1e40af 100%); transform: translateY(-1px); box-shadow: var(--shadow); }
+        .btn-outline-primary { border: 2px solid var(--primary); color: var(--primary); background: transparent; }
+        .btn-outline-primary:hover { background: var(--primary); color: white; transform: translateY(-1px); box-shadow: var(--shadow); }
+        .btn-outline-danger { border: 2px solid var(--danger); color: var(--danger); background: transparent; }
+        .btn-outline-danger:hover { background: var(--danger); color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 0.875rem; }
+        .form-control, .form-select {
+            border-radius: 10px; border: 1px solid var(--gray-300); padding: 10px 14px; font-size: 0.9rem; transition: var(--transition); background: white;
+        }
+        .form-control:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); outline: none; }
+        .form-label { margin-bottom: 6px; font-size: 0.85rem; font-weight: 500; color: var(--gray-600); }
+        .progress {
+            height: 20px; border-radius: 10px; background-color: var(--gray-200); overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .progress-bar {
+            border-radius: 10px; font-size: 0.75rem; font-weight: 600; background: linear-gradient(90deg, var(--primary) 0%, #3b82f6 100%);
+            transition: width 0.3s ease;
+        }
+        .logs-panel {
+            background: #1e293b; border: 1px solid var(--gray-700); border-radius: 12px; padding: 16px;
+            max-height: 240px; overflow-y: auto; font-family: monospace; font-size: 0.75rem;
+            line-height: 1.6; color: #e2e8f0; box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .chart-img { width: 100%; height: auto; max-height: 400px; object-fit: contain; border-radius: 8px; box-shadow: var(--shadow-sm); transition: var(--transition); }
+        .chart-img:hover { box-shadow: var(--shadow); transform: scale(1.01); }
+        .prediction-result { font-size: 2.2rem; font-weight: 700; color: var(--primary); text-shadow: 0 2px 4px rgba(37,99,235,0.1); }
+        .result-card {
+            background: linear-gradient(135deg, var(--primary-light) 0%, white 100%); border-left: 4px solid var(--primary);
+            padding: 20px; border-radius: 12px; margin-top: 20px;
+        }
+        .metric-card {
+            background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: var(--shadow-sm);
+            transition: var(--transition); border: 1px solid var(--gray-200);
+        }
+        .metric-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+        .metric-card .metric-value { font-size: 1.8rem; font-weight: 700; color: var(--gray-800); margin-bottom: 4px; }
+        .metric-card .metric-label { font-size: 0.85rem; color: var(--gray-500); font-weight: 500; }
+        .metric-card.best { background: linear-gradient(135deg, #fef3c7 0%, white 100%); border: 1px solid #fbbf24; }
+        .metric-card.best .metric-value { color: #d97706; }
+        .accordion-item { border: none; border-radius: 12px !important; margin-bottom: 12px; box-shadow: var(--shadow-sm); overflow: hidden; }
+        .accordion-button { background: white; border-radius: 12px !important; padding: 16px 20px; font-weight: 600; color: var(--gray-800); transition: var(--transition); }
+        .accordion-button:not(.collapsed) { background: var(--primary-light); color: var(--primary); box-shadow: none; }
+        .accordion-body { padding: 20px; background: var(--gray-50); }
+        .table { border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); }
+        .table thead th { background: var(--gray-50); border-bottom: 2px solid var(--gray-200); font-weight: 600; color: var(--gray-700); padding: 12px 16px; }
+        .table tbody td { padding: 12px 16px; border-bottom: 1px solid var(--gray-200); }
+        .table tbody tr:hover { background: var(--primary-light); }
+        .container-fluid { max-width: 100%; padding: 0 20px; }
+        .tooltip-inner { max-width: 300px; text-align: left; }
+        @media (max-width: 768px) {
+            body { padding-top: 70px; }
+            .navbar { height: 60px; }
+            .upload-zone { padding: 24px; }
+            .prediction-result { font-size: 1.8rem; }
+            .chart-img { max-height: 300px; }
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#"><i class="bi bi-graph-up-arrow me-2"></i>AI 回归建模平台</a>
+        <div class="d-flex align-items-center">
+            <a href="/" class="btn btn-outline-primary btn-sm me-3" title="返回质量损失系统主页"><i class="bi bi-house-door me-1"></i>返回主系统</a>
+            <span class="status-badge me-3"><i class="bi bi-circle-fill"></i>系统就绪</span>
+            <button id="retrainBtn" class="btn btn-outline-primary btn-sm" style="display:none;"><i class="bi bi-arrow-repeat me-1"></i>重新训练</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <!-- 历史任务选择器 -->
+    <div id="taskSelectorCard" class="card" style="display:none;">
+        <div class="card-header"><span><i class="bi bi-clock-history me-2"></i>历史训练记录</span></div>
+        <div class="card-body py-2">
+            <div class="row align-items-center">
+                <div class="col-auto"><label class="form-label mb-0">选择训练任务：</label></div>
+                <div class="col-md-4"><select id="taskSelector" class="form-select form-select-sm"></select></div>
+                <div class="col-auto"><button id="loadTaskBtn" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-in-down me-1"></i>加载</button></div>
+                <div class="col-auto"><button id="deleteTaskBtn" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-1"></i>删除选中任务</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 配置卡片 -->
+    <div id="configCard" class="card">
+        <div class="card-header">
+            <span><i class="bi bi-gear-wide-connected me-2"></i>数据与训练配置</span>
+            <span class="text-muted small">配置完成后点击"开始训练"启动建模</span>
+        </div>
+        <div class="card-body pt-0">
+            <ul class="nav nav-tabs mt-3" id="configTabs" role="tablist">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#uploadTab"><i class="bi bi-cloud-upload me-1"></i>上传数据</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#modelTab"><i class="bi bi-diagram-3 me-1"></i>选择模型</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#paramsTab"><i class="bi bi-sliders2 me-1"></i>训练参数</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#preprocessTab"><i class="bi bi-funnel me-1"></i>数据预处理</button></li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="uploadTab">
+                    <div class="upload-zone" id="dropZone">
+                        <i class="bi bi-cloud-arrow-up"></i>
+                        <p class="mt-2">拖拽 CSV 文件到此处，或点击下方按钮选择</p>
+                        <input type="file" id="csvFile" accept=".csv" class="d-none">
+                        <button class="btn btn-primary" onclick="document.getElementById('csvFile').click()">选择CSV文件</button>
+                    </div>
+                    <div id="uploadStatus" class="mt-3"></div>
+                    <div id="columnConfig" style="display:none" class="mt-4">
+                        <div class="card p-4 bg-light">
+                            <h6 class="fw-bold mb-3">数据列配置</h6>
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-3">
+                                    <label class="form-label">目标预测列 (Target)</label>
+                                    <select id="targetCol" class="form-select"></select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">需要删除的列（逗号分隔）</label>
+                                    <input type="text" id="dropCols" class="form-control" placeholder="例如: user_id, date, id">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">任务名称（可选）</label>
+                                    <input type="text" id="taskName" class="form-control" placeholder="如：生产质量预测V1">
+                                </div>
+                                <div class="col-md-3">
+                                    <button id="trainBtn" class="btn btn-primary w-100" disabled><i class="bi bi-play-fill me-2"></i>开始训练模型</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="modelTab">
+                    <div class="alert alert-light border mb-4">
+                        <i class="bi bi-info-circle me-2"></i>选择多个模型进行对比训练，系统将自动选出最优模型。<br>鼠标悬停模型名称查看适用场景说明。
+                    </div>
+                    <div id="modelChecks" class="row row-cols-2 row-cols-md-3 g-3"></div>
+                </div>
+                <div class="tab-pane fade" id="paramsTab">
+                    <div class="row g-4">
+                        <div class="col-md-8">
+                            <h6 class="fw-bold mb-3">基础训练参数</h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">测试集比例</label>
+                                    <input type="number" id="testSize" class="form-control" value="0.3" step="0.05" min="0.1" max="0.5">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">随机种子</label>
+                                    <input type="number" id="randomState" class="form-control" value="42">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">交叉验证折数</label>
+                                    <input type="number" id="cvFolds" class="form-control" value="5" min="2" max="10">
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="useOptuna">
+                                    <label class="form-check-label fw-bold">启用贝叶斯超参数优化</label>
+                                </div>
+                                <div class="ms-4">
+                                    <label class="form-label">优化迭代次数</label>
+                                    <input type="number" id="optunaTrials" class="form-control" value="50" min="10" max="200" disabled>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="fw-bold mb-3">高级分析选项</h6>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="doEDA" checked>
+                                <label class="form-check-label">探索性数据分析 (EDA)</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="doStatTests" checked>
+                                <label class="form-check-label">统计显著性检验</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="doShapAdvanced" checked>
+                                <label class="form-check-label">高级SHAP模型解释</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="preprocessTab">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3">数据清洗</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">缺失值处理策略</label>
+                                    <select id="missingStrategy" class="form-select">
+                                        <option value="none">不处理</option>
+                                        <option value="median" selected>中位数填充</option>
+                                        <option value="mean">均值填充</option>
+                                        <option value="constant">固定值填充</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">固定填充值（仅固定值策略有效）</label>
+                                    <input type="number" id="missingFillValue" class="form-control" value="0" step="any">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">异常值处理方法</label>
+                                    <select id="outlierMethod" class="form-select">
+                                        <option value="none" selected>不处理</option>
+                                        <option value="iqr">IQR截断法</option>
+                                        <option value="zscore">Z-score截断法</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3">特征工程</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">数值特征标准化</label>
+                                    <select id="scaler" class="form-select">
+                                        <option value="none">不标准化</option>
+                                        <option value="standard" selected>StandardScaler</option>
+                                        <option value="minmax">MinMaxScaler</option>
+                                        <option value="robust">RobustScaler</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">离散特征编码</label>
+                                    <select id="discreteEncode" class="form-select">
+                                        <option value="onehot" selected>独热编码 (One-Hot)</option>
+                                        <option value="ordinal">序号编码 (Ordinal)</option>
+                                        <option value="none">不编码</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 card p-4 bg-light">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="autoDetectDiscrete" checked>
+                            <label class="form-check-label fw-bold">自动识别离散特征（包含字符串列）</label>
+                        </div>
+                        <div class="ms-4">
+                            <label class="form-label">离散特征最大基数（唯一值数量）</label>
+                            <input type="number" id="discreteMaxCard" class="form-control" value="15" min="2" max="50">
+                        </div>
+                        <div id="discreteCandidates" class="mt-3 text-muted small">上传数据后将自动显示候选离散列</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 训练进度 -->
+    <div id="trainingProgress" class="card" style="display:none">
+        <div class="card-header">
+            <span><i class="bi bi-speedometer2 me-2"></i>模型训练中</span>
+            <span class="text-muted small">请勿关闭页面，训练完成后将自动显示结果</span>
+        </div>
+        <div class="card-body">
+            <div class="progress mb-4">
+                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:0%">0%</div>
+            </div>
+            <h6 class="fw-bold mb-2">训练日志</h6>
+            <div class="logs-panel" id="logsContent"></div>
+        </div>
+    </div>
+
+    <!-- 结果区域 -->
+    <div id="resultsArea" style="display:none;">
+        <div id="metricsCard"></div>
+
+        <div class="card">
+            <div class="card-header">
+                <span><i class="bi bi-magic me-2"></i>在线实时预测</span>
+                <span id="predictModelName" class="badge bg-primary ms-2"></span>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-light border mb-4">
+                    <i class="bi bi-info-circle me-2"></i>输入原始特征值，系统将自动应用与训练时相同的预处理流程
+                </div>
+                <div class="mb-3 text-start">
+                    <button id="randomSampleBtn" class="btn btn-outline-secondary btn-sm" title="从训练数据中随机抽取一条样本填入">
+                        <i class="bi bi-dice-5"></i> 随机填入样本数据
+                    </button>
+                </div>
+                <div id="predictionInputs" class="row g-3"></div>
+                <div class="text-center mt-4">
+                    <button id="predictBtn" class="btn btn-primary btn-lg"><i class="bi bi-calculator me-2"></i>开始预测</button>
+                </div>
+                <div id="predictionResult" class="mt-4"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-graph-up me-2"></i>模型详情与可视化</span>
+                <div class="d-flex align-items-center">
+                    <span class="me-2 text-muted small">切换查看模型：</span>
+                    <select id="modelSelector" class="form-select form-select-sm" style="width:auto;"></select>
+                    <a id="downloadModelLink" class="btn btn-sm btn-outline-secondary ms-2" href="#" download><i class="bi bi-download me-1"></i>下载当前模型</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3">预测值 vs 真实值拟合图</h6>
+                        <img id="fitPlot" class="chart-img w-100" style="display:none" alt="拟合图">
+                        <p class="text-muted small mt-2">标准：理想状态下点应落在对角线附近，R²越接近1越好。<br>建议：若散点分散或存在系统偏差，考虑增加特征或调整模型复杂度。</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3">特征重要性排序</h6>
+                        <img id="featImp" class="chart-img w-100" style="display:none" alt="特征重要性">
+                        <p class="text-muted small mt-2">标准：重要性值总和为1，数值越大对预测影响越大。<br>建议：关注Top特征，可尝试特征筛选或工程优化。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="bi bi-bar-chart-line me-2"></i>全模型性能对比</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="fw-bold mb-3">性能指标汇总表</h6>
+                        <div id="performanceTable" class="table-responsive"></div>
+                    </div>
+                    <div class="col-12 mt-4">
+                        <h6 class="fw-bold mb-3">R²得分对比图</h6>
+                        <img id="perfChart" class="chart-img w-100" style="display:none; max-height:500px;" alt="性能对比">
+                        <p class="text-muted small mt-2">标准：R²越高越好，同时关注CV R²的稳定性。<br>结论：系统已自动筛选出最佳模型，请在模型参数详情中查看优化结果。</p>
+                    </div>
+                </div>
+                <hr class="my-4">
+                <h6 class="fw-bold mb-3">模型参数详情（已翻译关键参数）</h6>
+                <table class="table table-bordered">
+                    <thead class="table-light"><tr><th>类型</th><th>模型名称</th><th>主要超参数</th></tr></thead>
+                    <tbody>
+                        <tr><td><span class="badge bg-warning">最优模型</span></td><td id="bestModelName">--</td><td id="bestModelParams" class="small text-break">--</td></tr>
+                        <tr><td><span class="badge bg-primary">当前查看</span></td><td id="currentModelNameInTable">--</td><td id="currentModelParams" class="small text-break">--</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="accordion" id="analysisAccordion">
+            <div class="accordion-item" id="edaSection" style="display:none">
+                <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#edaCollapse"><i class="bi bi-search me-2"></i>探索性数据分析 (EDA)</button></h2>
+                <div id="edaCollapse" class="accordion-collapse collapse" data-bs-parent="#analysisAccordion">
+                    <div class="accordion-body" id="edaContent"></div>
+                    <div class="px-4 pb-3 small text-muted">
+                        <strong>标准：</strong>数据应无明显异常值，分布接近正态（或偏态可解释），特征间不存在严重共线性。<br>
+                        <strong>结论与建议：</strong>请结合图表检查数据质量，若存在偏态或离群值，可在预处理中调整策略。
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item" id="statSection" style="display:none">
+                <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#statCollapse"><i class="bi bi-bar-chart-steps me-2"></i>统计显著性检验</button></h2>
+                <div id="statCollapse" class="accordion-collapse collapse" data-bs-parent="#analysisAccordion">
+                    <div class="accordion-body" id="statContent"></div>
+                    <div class="px-4 pb-3 small text-muted">
+                        <strong>标准：</strong>p值<0.05表示模型性能差异具有统计学意义，标注星号(*)。<br>
+                        <strong>结论：</strong>若最优模型与其他模型有显著差异，说明该模型确实更优；否则可选择更简单的模型。
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item" id="shapSection" style="display:none">
+                <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#shapCollapse"><i class="bi bi-brain me-2"></i>SHAP 模型可解释性分析</button></h2>
+                <div id="shapCollapse" class="accordion-collapse collapse" data-bs-parent="#analysisAccordion">
+                    <div class="accordion-body" id="shapContent"></div>
+                    <div class="px-4 pb-3 small text-muted">
+                        <strong>标准：</strong>SHAP值绝对值越大，特征对预测的贡献越大；正负号表示影响方向。<br>
+                        <strong>建议：</strong>重点关注SHAP值分布广的特征，可能为关键驱动因素，可用于后续优化或业务解释。
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item" id="optHistory" style="display:none">
+                <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#optCollapse"><i class="bi bi-graph-up-arrow me-2"></i>贝叶斯优化历史</button></h2>
+                <div id="optCollapse" class="accordion-collapse collapse" data-bs-parent="#analysisAccordion">
+                    <div class="accordion-body">
+                        <img id="optHistoryChart" class="chart-img w-100" style="display:none" alt="优化历史">
+                        <div class="mt-2 small text-muted" id="optHistoryHint" style="display:none;">
+                            <strong>标准：</strong>曲线收敛于较高值，表明超参数调优有效。<br>
+                            <strong>建议：</strong>若优化未收敛，可增加迭代次数或调整搜索空间。
+                        </div>
+                        <div class="mt-2 small text-muted" id="optHistoryNone" style="display:none;">
+                            未生成优化历史图。可能原因：<br>1. 未启用贝叶斯优化；<br>2. 最佳模型无超参数（如线性回归等），跳过优化；<br>3. 优化过程失败。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    $.ajaxSetup({ headers: { 'X-CSRFToken': csrfToken } });
+    var allModels = ['XGBoost','LightGBM','Random Forest','Gradient Boosting','Extra Trees','AdaBoost','Support Vector Machine','Linear Regression','Ridge Regression','Lasso Regression','ElasticNet','Decision Tree','K-Nearest Neighbors'];
+    var fileToken = '';   // 替代 filePath，保存上传令牌
+    var currentManifest = null;
+    var currentModelName = '';
+    var currentTaskId = null;
+    var pollingTimer = null;
+
+    const modelNamesCN = {
+        'XGBoost': 'XGBoost','LightGBM': 'LightGBM','Random Forest': '随机森林','Gradient Boosting': '梯度提升',
+        'Extra Trees': '极端随机树','AdaBoost': 'AdaBoost','Support Vector Machine': '支持向量机','Linear Regression': '线性回归',
+        'Ridge Regression': '岭回归','Lasso Regression': 'Lasso回归','ElasticNet': '弹性网络','Decision Tree': '决策树',
+        'K-Nearest Neighbors': 'K近邻'
+    };
+    const modelDescriptions = {
+        'XGBoost': '【XGBoost】高效梯度提升树，内置L1/L2正则化防止过拟合，自动处理缺失值。\n✅ 适合：结构化数据、表格型数据、回归/分类/排序任务，竞赛与工业界首选。\n⚠️ 注意：参数较多，需适当调参；类别特征需先编码。',
+        'LightGBM': '【LightGBM】基于直方图的轻量级梯度提升，训练速度极快，内存占用低，原生支持类别特征。\n✅ 适合：大规模数据集、高基数类别特征、实时预测系统。\n⚠️ 注意：叶子生长策略可能在小样本上过拟合，建议设置 min_data_in_leaf。',
+        'Random Forest': '【随机森林】Bagging集成多棵决策树，抗过拟合能力强，对异常值和噪声鲁棒，可评估特征重要性。\n✅ 适合：中等规模数据、特征维度较高、对模型解释性有一定要求的场景。\n⚠️ 注意：训练和预测速度随树数增加而线性增长，超高维稀疏数据效果可能不如提升树。',
+        'Gradient Boosting': '【梯度提升】依次训练弱学习器拟合残差，逐步降低偏差，性能强劲。\n✅ 适合：对精度要求极高的任务，数据量适中且特征已进行合理工程。\n⚠️ 注意：训练速度较慢，对异常值敏感，需谨慎设置学习率和树数。',
+        'Extra Trees': '【极端随机树】与随机森林类似，但分裂点完全随机，进一步降低方差，训练更快。\n✅ 适合：高维数据快速特征筛选、对训练速度有要求的场景。\n⚠️ 注意：随机性可能导致偏差略高，需增加树数补偿。',
+        'AdaBoost': '【AdaBoost】自适应增强，聚焦困难样本，使用指数损失函数。\n✅ 适合：简单基学习器（如浅树）组合，低维非线性数据。\n⚠️ 注意：对异常值和噪声数据敏感，容易受离群点影响。',
+        'Support Vector Machine': '【支持向量机】寻找最大间隔超平面，可使用核技巧处理非线性，适合高维小样本。\n✅ 适合：小样本、高维数据（如文本分类），非线性问题（配合RBF核）。\n⚠️ 注意：大数据集训练耗时，需特征缩放，核函数选择影响大。',
+        'Linear Regression': '【线性回归】最简单直观的模型，假设特征与目标呈线性关系，可解释性强。\n✅ 适合：关系近似线性、特征数较少、对模型解释性要求高的场景（如经济学）。\n⚠️ 注意：无法捕捉非线性，对多重共线性敏感。',
+        'Ridge Regression': '【岭回归】L2正则化的线性回归，抑制系数大小，缓解共线性。\n✅ 适合：特征数多或存在共线性的线性问题，需稳定系数的预测。\n⚠️ 注意：仍为线性模型，无法建模非线性；正则化强度需调整。',
+        'Lasso Regression': '【Lasso回归】L1正则化，可产生稀疏解，自动进行特征选择。\n✅ 适合：高维数据中希望筛选重要特征、简化模型解释。\n⚠️ 注意：特征高度相关时可能随机选择其中一个，不稳定。',
+        'ElasticNet': '【弹性网络】结合L1和L2正则化，平衡稀疏性和稳定性。\n✅ 适合：特征数多于样本数、特征间高度相关的场景。\n⚠️ 注意：需要调整两个超参数（alpha 和 l1_ratio）。',
+        'Decision Tree': '【决策树】树状结构，易于理解和可视化，无需特征缩放。\n✅ 适合：作为基线模型、数据探索、规则提取。\n⚠️ 注意：容易过拟合，通常需剪枝或与集成方法配合。',
+        'K-Nearest Neighbors': '【K近邻】基于实例的懒惰学习，通过相似邻居的均值预测。\n✅ 适合：样本量不大、特征空间有良好区分度、决策边界不规则的数据。\n⚠️ 注意：对特征缩放敏感，样本量大时预测慢，维度灾难。'
+    };
+    const paramNamesCN = {
+        'n_estimators': '树的数量','max_depth': '最大深度','learning_rate': '学习率','subsample': '样本采样率',
+        'colsample_bytree': '特征采样率','min_samples_split': '内部节点再划分最小样本数','min_samples_leaf': '叶节点最小样本数',
+        'alpha': '正则化强度(alpha)','l1_ratio': 'L1正则化比例','C': '惩罚系数C','gamma': '核系数gamma',
+        'kernel': '核函数','epsilon': '容忍度epsilon','n_neighbors': '邻居数','weights': '权重类型'
+    };
+
+    function getModelDisplayName(engName) { const cn = modelNamesCN[engName]||engName; return cn===engName?engName:cn+' ('+engName+')'; }
+    function translateParams(p) { if(!p||typeof p!=='object')return'未记录'; return Object.entries(p).map(([k,v])=>(paramNamesCN[k]||k)+': '+v).join('; '); }
+
+    // XSS 防御函数
+    function escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    $(function(){
+        var checksHtml = ''; allModels.forEach(m=>{ var d=getModelDisplayName(m), desc=modelDescriptions[m]||'', attr=desc?'data-bs-toggle="tooltip" data-bs-placement="right" title="'+escapeHtml(desc)+'"':''; checksHtml+='<div class="col"><div class="form-check"><input class="form-check-input model-check" type="checkbox" value="'+m+'" id="chk_'+m+'" checked> <label class="form-check-label" for="chk_'+m+'" '+attr+'>'+d+'</label></div></div>'; }); $('#modelChecks').html(checksHtml);
+        [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')).map(el=>new bootstrap.Tooltip(el));
+        $('#dropZone').on('dragover',e=>e.preventDefault()).on('drop',e=>{e.preventDefault();handleFile(e.originalEvent.dataTransfer.files[0]);});
+        $('#csvFile').on('change',e=>{if(e.target.files[0])handleFile(e.target.files[0]);});
+        $('#targetCol').on('change',()=>$('#trainBtn').prop('disabled',!$('#targetCol').val()));
+        $('#trainBtn').on('click',startTraining);
+        $('#modelSelector').on('change',function(){ currentModelName=this.value; updateModelCharts(); updatePredictModelName(); updateCurrentParams(); });
+        $('#predictBtn').on('click',performPrediction);
+        $('#useOptuna').on('change',()=>$('#optunaTrials').prop('disabled',!$('#useOptuna').is(':checked')));
+        $('#retrainBtn').on('click',()=>{ $('#configCard').show(); $('#resultsArea').hide(); $('#trainingProgress').hide(); $(this).hide(); });
+        $('#loadTaskBtn').on('click',()=>{ var tid=$('#taskSelector').val(); if(tid) switchTask(tid); });
+        $('#deleteTaskBtn').on('click', function(){
+            var tid = $('#taskSelector').val();
+            if(!tid) return;
+            if(!confirm('确定删除该任务吗？此操作不可恢复！')) return;
+            $.ajax({
+                url: '/ml-tool/task/' + tid,
+                type: 'DELETE',
+                success: function(res){
+                    if(res.status === 'success'){
+                        alert('任务已删除');
+                        if(tid === currentTaskId){
+                            $('#resultsArea').hide();
+                            currentTaskId = null;
+                            currentManifest = null;
+                        }
+                        loadTaskList();
+                    } else {
+                        alert('删除失败：' + res.message);
+                    }
+                },
+                error: function(){ alert('请求失败'); }
+            });
+        });
+        // 随机填入样本按钮
+        $('#randomSampleBtn').on('click', function(){
+            if(!currentTaskId) return alert('请先加载模型任务');
+            $.getJSON('/ml-tool/random_sample', {task_id: currentTaskId}, function(res){
+                if(res.status === 'success'){
+                    for(let feat in res.sample){
+                        let $input = $('.pred-input[data-feat="' + feat + '"]');
+                        if($input.length) $input.val(res.sample[feat]);
+                    }
+                } else {
+                    alert(res.message || '随机样本获取失败');
+                }
+            }).fail(function(){ alert('获取随机样本失败，请检查网络或任务是否支持'); });
+        });
+        loadTaskList(); loadExistingModel();
+    });
+
+    function handleFile(file){
+        console.log('文件上传:', file.name, file.size);
+        $('#uploadStatus').html('<div class="alert alert-info"><i class="bi bi-hourglass-split me-2"></i>正在上传并分析数据...</div>');
+        var fd = new FormData(); fd.append('file', file);
+        $.ajax({url:'/ml-tool/upload', type:'POST', data:fd, processData:false, contentType:false,
+            success: function(res){
+                console.log('上传响应:', res);
+                if(res.status==='success'){
+                    fileToken = res.file_token;   // 存储令牌
+                    var opts = '<option value="">-- 请选择要预测的目标列 --</option>';
+                    res.columns.forEach(function(c){ opts += '<option value="'+c+'">'+escapeHtml(c)+'</option>'; });
+                    $('#targetCol').html(opts);
+                    renderDiscreteCandidates(res.discrete_candidates);
+                    $('#columnConfig').show();
+                    $('#uploadStatus').html('<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>数据上传成功！共识别到 '+escapeHtml(String(res.columns.length))+' 列数据</div>');
+                } else {
+                    $('#uploadStatus').html('<div class="alert alert-danger">'+escapeHtml(res.message||'未知错误')+'</div>');
+                }
+            },
+            error: function(xhr, status, error){
+                console.error('上传失败:', status, error, xhr.responseText);
+                var msg = '上传失败，请检查文件格式（仅支持CSV）';
+                try { var res = JSON.parse(xhr.responseText); msg = res.message || msg; } catch(e){}
+                $('#uploadStatus').html('<div class="alert alert-danger"><i class="bi bi-x-circle-fill me-2"></i>'+escapeHtml(msg)+'</div>');
+            }
+        });
+    }
+
+    function renderDiscreteCandidates(candidates){
+        var c = $('#discreteCandidates');
+        if(!candidates || Object.keys(candidates).length===0){ c.html('<div class="text-muted">未检测到候选离散列</div>'); return; }
+        var h = '<div class="row row-cols-3 g-2">';
+        for(var col in candidates){
+            h += '<div class="col"><div class="form-check"><input class="form-check-input disc-check" type="checkbox" value="'+escapeHtml(col)+'" checked> <label class="form-check-label">'+escapeHtml(col)+' ('+candidates[col]+'个唯一值)</label></div></div>';
+        }
+        c.html(h+'</div>');
+    }
+
+    function startTraining(){
+        if(!$('#targetCol').val()) return alert('请选择目标列');
+        if(!fileToken) return alert('请先上传数据文件');
+        var sel = []; $('.model-check:checked').each(function(){ sel.push($(this).val()); });
+        if(sel.length===0) return alert('请至少选择一个模型');
+        var disc = []; $('.disc-check:checked').each(function(){ disc.push($(this).val()); });
+        var fd = {
+            file_token: fileToken,
+            target_col: $('#targetCol').val(),
+            drop_cols: $('#dropCols').val(),
+            test_size: $('#testSize').val(),
+            random_state: $('#randomState').val(),
+            cv_folds: $('#cvFolds').val(),
+            selected_models: sel,
+            use_optuna: $('#useOptuna').is(':checked'),
+            optuna_trials: $('#optunaTrials').val(),
+            do_eda: $('#doEDA').is(':checked'),
+            do_stat_tests: $('#doStatTests').is(':checked'),
+            do_shap_advanced: $('#doShapAdvanced').is(':checked'),
+            missing_strategy: $('#missingStrategy').val(),
+            missing_fill_value: $('#missingFillValue').val()||0,
+            outlier_method: $('#outlierMethod').val(),
+            scaler: $('#scaler').val(),
+            discrete_columns: disc,
+            auto_detect_discrete: $('#autoDetectDiscrete').is(':checked'),
+            discrete_encode: $('#discreteEncode').val(),
+            task_name: $('#taskName').val().trim()
+        };
+        $('#trainBtn').prop('disabled', true).html('<i class="bi bi-hourglass-split me-2"></i>训练启动中...');
+        $('#resultsArea').hide();
+        $.ajax({url:'/ml-tool/train', type:'POST', data:fd, traditional:true,
+            success: function(res){
+                if(res.status==='started'){
+                    currentTaskId = res.task_id;
+                    $('#trainingProgress').show();
+                    $('#progressBar').css('width','0%').text('0%');
+                    $('#logsContent').html('');
+                    pollProgress();
+                } else {
+                    alert('训练启动失败'); $('#trainBtn').prop('disabled', false).html('<i class="bi bi-play-fill me-2"></i>开始训练模型');
+                }
+            },
+            error: function(xhr){
+                var msg = '请求失败';
+                try { var r = JSON.parse(xhr.responseText); msg = r.error || msg; } catch(e){}
+                alert(msg);
+                $('#trainBtn').prop('disabled', false).html('<i class="bi bi-play-fill me-2"></i>开始训练模型');
+            }
+        });
+    }
+
+    function pollProgress(){
+        if(pollingTimer) clearInterval(pollingTimer);
+        pollingTimer = setInterval(function(){
+            $.getJSON('/ml-tool/training_progress/'+currentTaskId, function(data){
+                var percent = data.progress;
+                $('#progressBar').css('width', percent+'%').text(percent+'%');
+                var logsHtml = data.logs.map(function(msg){
+                    var color = '#cbd5e1';                     // 普通：浅灰
+                    if (msg.indexOf('✅') !== -1) color = '#4ade80';       // 成功：亮绿
+                    else if (msg.indexOf('❌') !== -1) color = '#f87171';   // 错误：亮红
+                    else if (msg.indexOf('训练') !== -1 || msg.indexOf('模型') !== -1) color = '#60a5fa'; // 模型：亮蓝
+                    return '<div style="color:' + color + '">' + escapeHtml(msg) + '</div>';
+                }).join('');
+                $('#logsContent').html(logsHtml);
+                $('#logsContent').scrollTop($('#logsContent')[0].scrollHeight);
+                if(data.status === 'completed'){
+                    clearInterval(pollingTimer);
+                    $('#trainBtn').prop('disabled', false).html('<i class="bi bi-check-circle-fill me-2"></i>训练完成');
+                    $('#trainingProgress').fadeOut(800);
+                    loadManifest(data.result);
+                } else if(data.status === 'failed'){
+                    clearInterval(pollingTimer);
+                    alert('训练失败：'+(data.result?data.result.message:''));
+                    $('#trainBtn').prop('disabled', false).html('<i class="bi bi-arrow-repeat me-2"></i>重试');
+                }
+            });
+        }, 1200);
+    }
+
+    function renderCharts(charts) {
+        if (charts.performance_chart) $('#perfChart').attr('src', charts.performance_chart).show();
+        else $('#perfChart').hide();
+        if (charts.target_dist_plot || charts.corr_heatmap || charts.feature_dist || charts.outlier_boxplot || charts.top6_scatter) displayEDAResults(charts);
+        else $('#edaContent').html('<div class="text-muted">分析图表不可用。</div>');
+        if (charts.cv_boxplot) displayStatResults(charts);
+        else $('#statContent').html('<div class="text-muted">统计图表不可用。</div>');
+        if (charts.shap_summary) displaySHAPResults(charts);
+        else $('#shapContent').html('<div class="text-muted">SHAP图表不可用。</div>');
+        if (charts.optimization_history) {
+            $('#optHistory').show();
+            $('#optHistoryChart').attr('src', charts.optimization_history).show();
+            $('#optHistoryHint').show();
+            $('#optHistoryNone').hide();
+        } else {
+            $('#optHistory').show();
+            $('#optHistoryChart').hide();
+            $('#optHistoryHint').hide();
+            $('#optHistoryNone').show();
+        }
+    }
+
+    function loadManifest(trainResult){
+        $.getJSON('/ml-tool/models_info?task_id='+currentTaskId).done(function(manifest){
+            currentManifest = manifest;
+            var models = manifest.models || [];
+            var opts = '';
+            models.forEach(function(m){ opts += '<option value="'+m+'">'+escapeHtml(getModelDisplayName(m))+'</option>'; });
+            $('#modelSelector').html(opts);
+            currentModelName = models[0] || '';
+            if(manifest.metrics) $('#performanceTable').html(buildMetricsTable(manifest.metrics));
+            var best = manifest.best_model;
+            $('#bestModelName').text(getModelDisplayName(best));
+            var bestParamsObj = (manifest.metrics && manifest.metrics[best] && manifest.metrics[best].params) ? manifest.metrics[best].params : null;
+            $('#bestModelParams').text(translateParams(bestParamsObj));
+            updateCurrentParams();
+            updateModelCharts();
+            updatePredictModelName();
+            generatePredictInputs(manifest.feature_names, trainResult ? trainResult.prediction_example : {});
+            showMetricsCard(best, manifest.metrics[best]);
+
+            var charts = manifest.charts || {};
+            if (trainResult) {
+                ['performance_chart','target_dist_plot','corr_heatmap','top6_scatter','feature_dist','outlier_boxplot',
+                 'cv_boxplot','shap_summary','shap_decision','shap_waterfall_1','shap_waterfall_2','shap_waterfall_3',
+                 'shap_heatmap','shap_clustering','shap_distributions','shap_corr_matrix','shap_stability',
+                 'optimization_history'].forEach(k => {
+                    if (!charts[k] && trainResult[k]) charts[k] = trainResult[k];
+                });
+                if (trainResult.normality_test) charts.normality_test = trainResult.normality_test;
+                if (trainResult.ttest_results) charts.ttest_results = trainResult.ttest_results;
+                if (trainResult.wilcoxon_results) charts.wilcoxon_results = trainResult.wilcoxon_results;
+            }
+            renderCharts(charts);
+
+            $('#downloadModelLink').attr('href', '/ml-tool/download_model/'+currentModelName+'?task_id='+currentTaskId);
+            // 随机样本按钮可用性提示
+            if (manifest.has_original_data) {
+                $('#randomSampleBtn').prop('disabled', false).attr('title', '从训练数据中随机抽取一条样本填入');
+            } else {
+                $('#randomSampleBtn').prop('disabled', true).attr('title', '该任务未保留原始数据，不支持随机样本（请重新训练）');
+            }
+            $('#resultsArea').show(); $('#configCard').hide(); $('#retrainBtn').show();
+        }).fail(function(){ alert('加载模型清单失败'); });
+    }
+
+    function loadExistingModel(){
+        var url = '/ml-tool/models_info';
+        if (currentTaskId) url += '?task_id=' + currentTaskId;
+        $.getJSON(url).done(function(manifest){
+            if(manifest && manifest.models && manifest.models.length > 0){
+                currentTaskId = manifest.task_id;
+                currentManifest = manifest;
+                var models = manifest.models || [];
+                var opts = '';
+                models.forEach(function(m){ opts += '<option value="'+m+'">'+escapeHtml(getModelDisplayName(m))+'</option>'; });
+                $('#modelSelector').html(opts);
+                currentModelName = models[0] || '';
+                if(manifest.metrics) $('#performanceTable').html(buildMetricsTable(manifest.metrics));
+                var best = manifest.best_model;
+                $('#bestModelName').text(getModelDisplayName(best));
+                var bestParamsObj = (manifest.metrics && manifest.metrics[best] && manifest.metrics[best].params) ? manifest.metrics[best].params : null;
+                $('#bestModelParams').text(translateParams(bestParamsObj));
+                updateCurrentParams();
+                updateModelCharts();
+                updatePredictModelName();
+                generatePredictInputs(manifest.feature_names, {});
+                showMetricsCard(best, manifest.metrics[best]);
+
+                renderCharts(manifest.charts || {});
+
+                $('#downloadModelLink').attr('href', '/ml-tool/download_model/'+currentModelName+'?task_id='+currentTaskId);
+                if (manifest.has_original_data) {
+                    $('#randomSampleBtn').prop('disabled', false).attr('title', '从训练数据中随机抽取一条样本填入');
+                } else {
+                    $('#randomSampleBtn').prop('disabled', true).attr('title', '该任务未保留原始数据，不支持随机样本（请重新训练）');
+                }
+                $('#resultsArea').show(); $('#configCard').hide(); $('#retrainBtn').show();
+            }
+        }).fail(function(){});
+    }
+
+    function showMetricsCard(bestModel, metrics){
+        if(!metrics) return;
+        var r2 = metrics.Test_R2;
+        var html = '<div class="card"><div class="card-body py-4"><div class="row g-4 align-items-center">';
+        html += '<div class="col-md-3"><h5><i class="bi bi-trophy-fill text-warning me-2"></i>'+escapeHtml(getModelDisplayName(bestModel))+'</h5></div>';
+        html += '<div class="col-md-2"><div class="metric-card best"><div class="metric-value">'+r2.toFixed(4)+'</div><div class="metric-label">Test R²</div></div></div>';
+        html += '<div class="col-md-2"><div class="metric-card"><div class="metric-value">'+metrics.Test_RMSE.toFixed(4)+'</div><div class="metric-label">RMSE</div></div></div>';
+        html += '<div class="col-md-2"><div class="metric-card"><div class="metric-value">'+metrics.Test_MAE.toFixed(4)+'</div><div class="metric-label">MAE</div></div></div>';
+        html += '<div class="col-md-3"><div class="metric-card"><div class="metric-value">'+metrics.CV_Mean.toFixed(4)+'±'+metrics.CV_Std.toFixed(4)+'</div><div class="metric-label">CV R²</div></div></div>';
+        html += '</div></div></div>';
+        $('#metricsCard').html(html);
+    }
+
+    function buildMetricsTable(metrics){
+        var html = '<table class="table table-hover"><thead><tr><th>模型</th><th>测试R²</th><th>测试RMSE</th><th>测试MAE</th><th>交叉验证R²(均值±标准差)</th></tr></thead><tbody>';
+        var sorted = Object.keys(metrics).sort(function(a,b){ return metrics[b].Test_R2 - metrics[a].Test_R2; });
+        sorted.forEach(function(m){
+            var isBest = m === currentManifest.best_model;
+            var displayName = getModelDisplayName(m);
+            html += '<tr class="'+(isBest?'table-warning':'')+'"><td>'+(isBest?'<i class="bi bi-trophy-fill text-warning me-1"></i>':'')+escapeHtml(displayName)+'</td><td>'+metrics[m].Test_R2.toFixed(4)+'</td><td>'+metrics[m].Test_RMSE.toFixed(4)+'</td><td>'+metrics[m].Test_MAE.toFixed(4)+'</td><td>'+metrics[m].CV_Mean.toFixed(4)+'±'+metrics[m].CV_Std.toFixed(4)+'</td></tr>';
+        });
+        html += '</tbody></table>';
+        return html;
+    }
+
+    function updateCurrentParams(){
+        if(!currentManifest || !currentModelName) return;
+        var params = currentManifest.metrics && currentManifest.metrics[currentModelName] ? currentManifest.metrics[currentModelName].params : null;
+        $('#currentModelNameInTable').text(getModelDisplayName(currentModelName));
+        $('#currentModelParams').text(translateParams(params));
+        $('#downloadModelLink').attr('href', '/ml-tool/download_model/'+currentModelName+'?task_id='+currentTaskId);
+    }
+
+    function updateModelCharts(){
+        if(!currentModelName) return;
+        var base = '/ml-tool/model_chart/'+currentModelName;
+        $('#fitPlot').attr('src', base+'/fit?task_id='+currentTaskId).show();
+        $('#featImp').attr('src', base+'/importance?task_id='+currentTaskId).show();
+    }
+
+    function updatePredictModelName(){ $('#predictModelName').text(getModelDisplayName(currentModelName||'')); }
+
+    function generatePredictInputs(features, example){
+        if(!features) return;
+        var h = '';
+        features.forEach(function(f){
+            var v = (example && example[f] !== undefined) ? example[f] : '';
+            h += '<div class="col-md-3 col-sm-6"><div class="form-floating"><input type="number" class="form-control pred-input" placeholder=" " value="'+escapeHtml(String(v))+'" step="any" data-feat="'+escapeHtml(f)+'"><label>'+escapeHtml(f)+'</label></div></div>';
+        });
+        $('#predictionInputs').html(h);
+    }
+
+    function performPrediction(){
+        var data = {model_name: currentModelName, task_id: currentTaskId};
+        var hasEmpty = false;
+        $('.pred-input').each(function(){
+            var val = $(this).val();
+            if(val === '' || isNaN(val)) { hasEmpty = true; $(this).addClass('is-invalid'); }
+            else { $(this).removeClass('is-invalid'); data[$(this).data('feat')] = val; }
+        });
+        if(hasEmpty) { $('#predictionResult').html('<div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>请填写所有特征值</div>'); return; }
+        $.ajax({url:'/ml-tool/predict', type:'POST', contentType:'application/json', data:JSON.stringify(data),
+            success: function(res){
+                if(res.status==='success') $('#predictionResult').html('<div class="result-card d-flex align-items-center"><i class="bi bi-check-circle-fill text-success me-3" style="font-size:2rem;"></i><div><div class="text-muted small">预测结果</div><div class="prediction-result">'+res.prediction.toFixed(4)+'</div></div></div>');
+                else $('#predictionResult').html('<div class="alert alert-danger">'+escapeHtml(res.message)+'</div>');
+            },
+            error: function(){ $('#predictionResult').html('<div class="alert alert-danger">请求失败</div>'); }
+        });
+    }
+
+    function displayEDAResults(res){
+        if(!res || !res.target_dist_plot){ $('#edaSection').hide(); return; }
+        $('#edaSection').show();
+        var html = '';
+        if(res.missing_table) html += '<div class="mb-2 small">'+res.missing_table+'</div>';
+        if(res.desc_stats) html += '<div class="mb-2 small">'+res.desc_stats+'</div>';
+        if(res.normality_text) html += '<pre class="small bg-light p-2">'+escapeHtml(res.normality_text)+'</pre>';
+        html += '<div class="row g-3">';
+        html += '<div class="col-md-6"><img class="chart-img" src="'+res.target_dist_plot+'"></div>';
+        if(res.corr_heatmap) html += '<div class="col-md-6"><img class="chart-img" src="'+res.corr_heatmap+'"></div>';
+        if(res.top6_scatter) html += '<div class="col-md-6"><img class="chart-img" src="'+res.top6_scatter+'"></div>';
+        if(res.feature_dist) html += '<div class="col-md-6"><img class="chart-img" src="'+res.feature_dist+'"></div>';
+        if(res.outlier_boxplot) html += '<div class="col-md-6"><img class="chart-img" src="'+res.outlier_boxplot+'"></div>';
+        html += '</div>';
+        $('#edaContent').html(html);
+    }
+
+    function displayStatResults(res){
+        if(!res || !res.cv_boxplot){ $('#statSection').hide(); return; }
+        $('#statSection').show();
+        var html = '<div class="row"><div class="col-md-6">';
+        var hasText = false;
+        var statTexts = {};
+        if (res.normality_test) statTexts.normality_test = res.normality_test;
+        if (res.ttest_results) statTexts.ttest_results = res.ttest_results;
+        if (res.wilcoxon_results) statTexts.wilcoxon_results = res.wilcoxon_results;
+        if (!statTexts.normality_test && !statTexts.ttest_results && !statTexts.wilcoxon_results) {
+            statTexts = (currentManifest && currentManifest.stat_texts) || {};
+        }
+        if(statTexts.normality_test) { html += '<pre class="small bg-light p-2">'+escapeHtml(statTexts.normality_test)+'</pre>'; hasText = true; }
+        if(statTexts.ttest_results) { html += '<pre class="small bg-light p-2">'+escapeHtml(statTexts.ttest_results)+'</pre>'; hasText = true; }
+        if(statTexts.wilcoxon_results) { html += '<pre class="small bg-light p-2">'+escapeHtml(statTexts.wilcoxon_results)+'</pre>'; hasText = true; }
+        if(!hasText) html += '<div class="text-muted">检验已执行，详细文本数据未持久化，请参考图表。</div>';
+        html += '</div>';
+        html += '<div class="col-md-6"><img class="chart-img" src="'+res.cv_boxplot+'"></div>';
+        html += '</div>';
+        $('#statContent').html(html);
+    }
+
+    function displaySHAPResults(res){
+        if(!res || !res.shap_summary){ $('#shapSection').hide(); return; }
+        $('#shapSection').show();
+        var html = '<div class="row g-3">';
+        html += '<div class="col-md-6"><img class="chart-img" src="'+res.shap_summary+'"></div>';
+        if(res.shap_decision){
+            html += '<div class="col-md-6"><img class="chart-img" src="'+res.shap_decision+'"></div>';
+            for(var i=1; i<=3; i++) {
+                if(res['shap_waterfall_'+i]) html += '<div class="col-md-6"><img class="chart-img" src="'+res['shap_waterfall_'+i]+'"></div>';
+            }
+            if(res.shap_heatmap) html += '<div class="col-md-6"><img class="chart-img" src="'+res.shap_heatmap+'"></div>';
+            if(res.shap_clustering) html += '<div class="col-md-6"><img class="chart-img" src="'+res.shap_clustering+'"></div>';
+            if(res.shap_distributions) html += '<div class="col-md-6"><img class="chart-img" src="'+res.shap_distributions+'"></div>';
+            if(res.shap_corr_matrix) html += '<div class="col-md-6"><img class="chart-img" src="'+res.shap_corr_matrix+'"></div>';
+            if(res.shap_stability) html += '<div class="col-md-6"><img class="chart-img" src="'+res.shap_stability+'"></div>';
+        }
+        html += '</div>';
+        $('#shapContent').html(html);
+    }
+
+    function loadTaskList(){
+        $.getJSON('/ml-tool/task_list', function(tasks){
+            var s = $('#taskSelector').empty();
+            if(!tasks.length){ s.append('<option>暂无记录</option>'); return; }
+            tasks.forEach(function(t){
+                s.append('<option value="'+t.task_id+'">'+escapeHtml(t.task_name)+' | '+t.created_time+' | 模型:'+t.num_models+'</option>');
+            });
+            s.val(tasks[0].task_id);
+            $('#taskSelectorCard').show();
+        });
+    }
+
+    function switchTask(tid){
+        currentTaskId = tid;
+        loadExistingModel();
+    }
+</script>
