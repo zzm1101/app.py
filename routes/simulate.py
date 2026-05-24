@@ -262,6 +262,8 @@ def generate_mock_data(config, preview_mode=False):
             ctq_id = str(ctq.ctq_id)
             feat_list = ctq_features_map.get(ctq_id, [])
             formula = ctq_formulas.get(ctq_id)
+            if ctq.ctq_name == '双歧杆菌数':
+                print(f"!!! CTQ {ctq.ctq_name} 从 ctq_formulas 获取的公式: {formula}")
             for sample_idx in range(samples_per_batch):
                 feat_dict = {}
                 for feat in feat_list:
@@ -402,7 +404,11 @@ def generate_mock_data(config, preview_mode=False):
                     else:
                         value = lsl * (1 - np.random.uniform(0.1, 0.5))
                 value = np.clip(value, lsl * 0.5, usl * 1.5)
-
+                # ========== 添加调试打印 ==========
+                if ctq.ctq_name == '双歧杆菌数':
+                    print(
+                        f"[DEBUG] CTQ: {ctq.ctq_name}, raw_val: {raw_val}, ppk_enabled: {ppk_info['enabled']}, value: {value}, target_mean: {ctq.target_m}")
+                # =================================
                 production_rows.append({
                     'batch_no': batch['batch_no'],
                     'produce_date': batch['produce_date'].date(),

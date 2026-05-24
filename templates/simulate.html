@@ -47,6 +47,13 @@
     .is-valid { border-color: #10b981 !important; background-image: none; }
     .is-invalid { border-color: #ef4444 !important; background-image: none; }
     .factor-import-btn { font-size: 0.75rem; padding: 0.1rem 0.4rem; }
+    .modal-feature-item {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        border: 1px solid #e2e8f0;
+    }
 </style>
 {% endblock %}
 
@@ -55,7 +62,7 @@
     <div class="card">
         <div class="card-header">
             <h5><i class="fa fa-magic me-2"></i>模拟数据生成器（专家版）</h5>
-            <p class="mb-0 text-muted small">支持乳制品影响因子库、公式模板、PPK强制、实时预览、配置持久化</p>
+            <p class="mb-0 text-muted small">支持自定义因子库、公式模板、PPK强制、实时预览、配置持久化</p>
         </div>
         <div class="card-body">
             <form id="simulateForm">
@@ -98,6 +105,7 @@
                     <div class="col-md-6 text-end">
                         <button type="button" class="btn btn-outline-secondary me-2" id="saveConfigBtn"><i class="fa fa-save me-1"></i>保存配置</button>
                         <button type="button" class="btn btn-outline-secondary me-2" id="loadConfigBtn"><i class="fa fa-folder-open me-1"></i>加载配置</button>
+                        <button type="button" class="btn btn-outline-info me-2" id="manageFactorLibBtn"><i class="fa fa-database"></i> 因子库管理</button>
                         <button type="button" class="btn btn-info me-2" id="previewBtn"><i class="fa fa-eye me-1"></i>实时预览</button>
                         <button type="submit" class="btn btn-primary" id="generateBtn"><i class="fa fa-play me-2"></i>生成数据</button>
                     </div>
@@ -109,7 +117,71 @@
     </div>
 </div>
 
+<!-- 因子库管理模态框 -->
+<div class="modal fade" id="factorLibModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa fa-database me-2"></i>因子库管理</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-between mb-3">
+                    <div>
+                        <button class="btn btn-sm btn-primary" id="addLibBtn"><i class="fa fa-plus"></i> 新建因子库</button>
+                        <span class="text-muted small ms-2">提示：预置库为只读，自定义库可编辑/删除</span>
+                    </div>
+                </div>
+                <div id="factorLibList" class="row g-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑因子库模态框 -->
+<div class="modal fade" id="editLibModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editLibTitle">编辑因子库</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editLibForm">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">因子库名称</label>
+                            <input type="text" class="form-control" id="libName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">匹配关键词（用于自动匹配CTQ）</label>
+                            <input type="text" class="form-control" id="libKeyword" placeholder="如：双歧杆菌">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">公式模板</label>
+                        <textarea class="form-control" id="libFormula" rows="3" placeholder="例如: 10 ** (7.0 + 0.15*(初始添加量_log-7) ...)"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">特征列表</label>
+                        <div id="libFeaturesContainer"></div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addFeatureBtn"><i class="fa fa-plus"></i> 添加特征</button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="saveLibBtn">保存因子库</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    // ========== 全局变量 ==========
     const allCtqs = {{ ctqs_json | safe }};
     const factorLibrary = {{ factor_library | safe }};
     let selectedCtqIds = [];
@@ -118,7 +190,10 @@
     let ctqForceCpk = {};
 
     const STORAGE_KEY = 'simulate_config_v2';
+    const CUSTOM_LIB_KEY = 'custom_factor_libraries';
+    let customLibraries = [];
 
+    // ========== 工具函数 ==========
     function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
 
     function validateFormula(formula, availableFeatures) {
@@ -130,11 +205,15 @@
         if (stack !== 0) return { valid: false, message: '括号未闭合' };
         const identifiers = formula.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || [];
         const allowedFunctions = ['sin', 'cos', 'tan', 'exp', 'log', 'log10', 'sqrt', 'abs', 'pow'];
+        const missingVars = [];
         for (let id of identifiers) {
             if (allowedFunctions.includes(id)) continue;
             if (!availableFeatures.includes(id) && !/^\d+$/.test(id)) {
-                return { valid: false, message: `未知变量或函数: ${id}，可用特征: ${availableFeatures.join(', ')}` };
+                missingVars.push(id);
             }
+        }
+        if (missingVars.length) {
+            return { valid: false, message: `未知变量: ${missingVars.join(', ')}。可用特征: ${availableFeatures.join(', ') || '无'}` };
         }
         try {
             new Function(...availableFeatures, `"use strict"; return (${formula});`)(...availableFeatures.map(() => 0));
@@ -144,6 +223,7 @@
         }
     }
 
+    // ========== CTQ 选择渲染 ==========
     function renderCtqSelector() {
         const container = document.getElementById('ctqSelector');
         container.innerHTML = '';
@@ -163,27 +243,7 @@
         renderCtqCards();
     }
 
-    function importFromFactorLibrary(ctqId, ctqName) {
-        const lib = factorLibrary[ctqName];
-        if (!lib) { alert(`未找到因子库定义：${ctqName}`); return; }
-        ctqFeatures[ctqId] = lib.features.map(f => {
-            const base = { name: f.name, type: f.type };
-            if (f.type === 'numeric') {
-                base.distribution = f.distribution || 'normal';
-                if (base.distribution === 'normal') base.normalParams = `${f.mean},${f.std}`;
-                else if (base.distribution === 'uniform') base.uniformRange = `${f.min || 0},${f.max || 1}`;
-                else if (base.distribution === 'lognormal') base.normalParams = `${f.mean},${f.std}`;  // 后端会根据 distribution 字段处理
-            } else {
-                base.catWeights = (f.categories || []).map(c => `${c}:1`).join(',');
-            }
-            return base;
-        });
-        ctqFormulas[ctqId] = lib.formula_template;
-        ctqForceCpk[ctqId] = { enabled: true, target_cpk: 1.33, noise_std: 0 };
-        renderCtqCards();
-        alert(`已导入因子库「${ctqName}」的默认特征和公式`);
-    }
-
+    // ========== 特征管理（动态） ==========
     function addFeatureForCtq(ctqId) {
         if (!ctqFeatures[ctqId]) ctqFeatures[ctqId] = [];
         ctqFeatures[ctqId].push({
@@ -277,6 +337,43 @@
         } catch (err) { alert('测试请求失败'); }
     }
 
+    // ========== 因子库预置匹配 ==========
+    function getMatchedLibKey(ctqName) {
+        const lowerName = ctqName.toLowerCase();
+        if (lowerName.includes('双歧杆菌') || lowerName.includes('活菌')) return '双歧杆菌活菌数';
+        if (lowerName.includes('净含量') || lowerName.includes('灌装')) return '净含量(200g)';
+        if (lowerName.includes('蛋白')) return '蛋白质含量';
+        if (lowerName.includes('脂肪')) return '脂肪含量';
+        return ctqName;
+    }
+
+    function importFromFactorLibrary(ctqId, ctqName) {
+        const libKey = getMatchedLibKey(ctqName);
+        const lib = factorLibrary[libKey];
+        if (!lib) {
+            alert(`未找到因子库定义：${ctqName}（尝试匹配 ${libKey} 失败）\n请检查CTQ名称是否正确。`);
+            console.warn(`因子库匹配失败: ${ctqName} -> ${libKey}`);
+            return;
+        }
+        ctqFeatures[ctqId] = lib.features.map(f => {
+            const base = { name: f.name, type: f.type };
+            if (f.type === 'numeric') {
+                base.distribution = f.distribution || 'normal';
+                if (base.distribution === 'normal') base.normalParams = `${f.mean},${f.std}`;
+                else if (base.distribution === 'uniform') base.uniformRange = `${f.min || 0},${f.max || 1}`;
+                else if (base.distribution === 'lognormal') base.normalParams = `${f.mean},${f.std}`;
+            } else {
+                base.catWeights = (f.categories || []).map(c => `${c}:1`).join(',');
+            }
+            return base;
+        });
+        ctqFormulas[ctqId] = lib.formula_template;
+        ctqForceCpk[ctqId] = { enabled: true, target_cpk: 1.33, noise_std: 0 };
+        renderCtqCards();
+        alert(`已导入因子库「${libKey}」的默认特征和公式`);
+    }
+
+    // ========== 渲染CTQ卡片 ==========
     function renderCtqCards() {
         const container = document.getElementById('ctqFeaturesContainer');
         container.innerHTML = '';
@@ -287,6 +384,11 @@
             const display = ctq.product_item ? `${ctq.product_item} - ${ctq.ctq_name}` : `通用 - ${ctq.ctq_name}`;
             if (!ctqFeatures[ctqId]) ctqFeatures[ctqId] = [];
             const forceCfg = ctqForceCpk[ctqId] || { enabled: true, target_cpk: 1.33, noise_std: 0 };
+
+            const matchedKey = getMatchedLibKey(ctqName);
+            const templateFormula = factorLibrary[matchedKey]?.formula_template || '';
+            const hasTemplate = templateFormula !== '';
+
             const card = document.createElement('div');
             card.className = 'ctq-card';
             card.dataset.ctqId = ctqId;
@@ -302,9 +404,9 @@
                     <div class="row">
                         <div class="col-md-7">
                             <label class="param-label">自定义公式（可选）</label>
-                            <select class="form-select form-select-sm formula-template-select mb-1" data-ctq="${ctqId}">
+                            <select class="form-select form-select-sm formula-template-select mb-1" data-ctq="${ctqId}" ${!hasTemplate ? 'disabled' : ''}>
                                 <option value="">-- 插入公式模板 --</option>
-                                <option value="${escapeHtml(factorLibrary[ctqName]?.formula_template || '')}">乳制品推荐公式</option>
+                                ${hasTemplate ? `<option value="${templateFormula.replace(/"/g, '&quot;')}">乳制品推荐公式</option>` : '<option value="">无可用模板</option>'}
                             </select>
                             <input type="text" class="form-control form-control-sm ctq-formula" data-ctq="${ctqId}" value="${escapeHtml(ctqFormulas[ctqId] || '')}" placeholder="例如: 3000000 + 10000 * 发酵温度">
                         </div>
@@ -317,7 +419,7 @@
                         <label class="form-check-label small">强制 PPK（保证整体过程性能指数达到目标值）</label>
                     </div>
                     <div class="row mt-1 cpk-params" style="${forceCfg.enabled ? '' : 'display:none;'}">
-                        <div class="col-md-6"><label class="param-label">目标 PPK</label><input type="number" step="0.05" class="form-control form-control-sm target-cpk" data-ctq="${ctqId}" value="${forceCfg.target_cpk}"></div>
+                        <div class="col-md-6"><label class="param-label">目标 PPK</label><input type="number" step="any" class="form-control form-control-sm target-cpk" data-ctq="${ctqId}" value="${forceCfg.target_cpk}"></div>
                         <div class="col-md-6"><label class="param-label">额外噪声标准差（缩放后添加）</label><input type="number" step="any" class="form-control form-control-sm cpk-noise" data-ctq="${ctqId}" value="${forceCfg.noise_std}"></div>
                     </div>
                     <div class="text-muted small mt-1">公式支持 + - * / ** sin cos tan exp log log10 sqrt abs 等，变量名为特征名。留空则使用默认PPK模型。</div>
@@ -330,15 +432,17 @@
             card.querySelector('.add-feature-btn').addEventListener('click', () => addFeatureForCtq(ctqId));
             card.querySelector('.factor-import-btn').addEventListener('click', () => importFromFactorLibrary(ctqId, ctqName));
             const templateSelect = card.querySelector('.formula-template-select');
-            templateSelect.addEventListener('change', (e) => {
-                if (e.target.value) {
-                    const formulaInput = card.querySelector('.ctq-formula');
-                    formulaInput.value = e.target.value;
-                    ctqFormulas[ctqId] = e.target.value;
-                    updateFormulaValidation(ctqId);
-                    e.target.value = '';
-                }
-            });
+            if (hasTemplate) {
+                templateSelect.addEventListener('change', (e) => {
+                    if (e.target.value) {
+                        const formulaInput = card.querySelector('.ctq-formula');
+                        formulaInput.value = e.target.value;
+                        ctqFormulas[ctqId] = e.target.value;
+                        updateFormulaValidation(ctqId);
+                        e.target.value = '';
+                    }
+                });
+            }
             const formulaInput = card.querySelector('.ctq-formula');
             formulaInput.addEventListener('input', () => updateFormulaValidation(ctqId));
             formulaInput.addEventListener('change', e => { ctqFormulas[ctqId] = e.target.value; updateFormulaValidation(ctqId); });
@@ -386,7 +490,16 @@
         }
     }
 
+    // ========== 配置收集（强制同步公式） ==========
     function collectConfig() {
+        // 强制从DOM同步公式（确保手动修改的公式被保存）
+        document.querySelectorAll('.ctq-card').forEach(card => {
+            const ctqId = parseInt(card.dataset.ctqId);
+            const formulaInput = card.querySelector('.ctq-formula');
+            if (formulaInput) {
+                ctqFormulas[ctqId] = formulaInput.value;
+            }
+        });
         const form = document.getElementById('simulateForm');
         const formData = new FormData(form);
         const config = {
@@ -453,6 +566,7 @@
         return config;
     }
 
+    // ========== 实时预览 ==========
     async function previewConfiguration() {
         const config = collectConfig();
         if (!config.ctq_ids.length) { alert('请至少选择一个CTQ'); return; }
@@ -483,6 +597,7 @@
         }
     }
 
+    // ========== 配置持久化 ==========
     function saveConfig() {
         const config = collectConfig();
         const toSave = {
@@ -522,6 +637,7 @@
         setTimeout(() => div.style.display = 'none', 5000);
     }
 
+    // ========== 表单提交 ==========
     document.getElementById('simulateForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const config = collectConfig();
@@ -555,10 +671,274 @@
         }
     });
 
+    // ========== 因子库管理 ==========
+    function loadCustomLibraries() {
+        const stored = localStorage.getItem(CUSTOM_LIB_KEY);
+        if (stored) {
+            try { customLibraries = JSON.parse(stored); } catch(e) { customLibraries = []; }
+        } else {
+            customLibraries = [];
+        }
+    }
+
+    function saveCustomLibraries() {
+        localStorage.setItem(CUSTOM_LIB_KEY, JSON.stringify(customLibraries));
+    }
+
+    function getAllLibraries() {
+        const presetList = Object.entries(factorLibrary).map(([key, lib]) => ({
+            id: `preset_${key}`,
+            name: key,
+            keyword: key,
+            formula: lib.formula_template,
+            features: lib.features,
+            isPreset: true
+        }));
+        const customList = customLibraries.map((lib, idx) => ({
+            id: `custom_${idx}`,
+            ...lib,
+            isPreset: false
+        }));
+        return [...presetList, ...customList];
+    }
+
+    function renderFactorLibList() {
+        const container = document.getElementById('factorLibList');
+        const libraries = getAllLibraries();
+        if (!libraries.length) {
+            container.innerHTML = '<div class="col-12 text-muted">暂无因子库，点击“新建”添加</div>';
+            return;
+        }
+        let html = '';
+        libraries.forEach(lib => {
+            html += `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                            <strong>${escapeHtml(lib.name)}</strong>
+                            ${lib.isPreset ? '<span class="badge bg-secondary">预置</span>' : ''}
+                        </div>
+                        <div class="card-body small">
+                            <div><strong>匹配关键词：</strong> ${escapeHtml(lib.keyword)}</div>
+                            <div><strong>特征数：</strong> ${lib.features?.length || 0}</div>
+                            <div class="text-truncate"><strong>公式：</strong> ${escapeHtml(lib.formula?.substring(0, 60) || '')}...</div>
+                        </div>
+                        <div class="card-footer bg-transparent d-flex justify-content-between">
+                            <button class="btn btn-sm btn-outline-primary use-lib-btn" data-lib='${JSON.stringify(lib)}'><i class="fa fa-upload"></i> 导入当前CTQ</button>
+                            ${!lib.isPreset ? `<button class="btn btn-sm btn-outline-secondary edit-lib-btn" data-lib='${JSON.stringify(lib)}'><i class="fa fa-edit"></i> 编辑</button>
+                            <button class="btn btn-sm btn-outline-danger delete-lib-btn" data-id="${lib.id}"><i class="fa fa-trash"></i> 删除</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+
+        document.querySelectorAll('.use-lib-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const lib = JSON.parse(btn.dataset.lib);
+                importLibraryToCurrentCtq(lib);
+                bootstrap.Modal.getInstance(document.getElementById('factorLibModal')).hide();
+            });
+        });
+        document.querySelectorAll('.edit-lib-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const lib = JSON.parse(btn.dataset.lib);
+                openEditLibModal(lib);
+            });
+        });
+        document.querySelectorAll('.delete-lib-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                if (confirm('确定删除该因子库吗？')) {
+                    const idx = customLibraries.findIndex(l => `custom_${customLibraries.indexOf(l)}` === id);
+                    if (idx !== -1) {
+                        customLibraries.splice(idx, 1);
+                        saveCustomLibraries();
+                        renderFactorLibList();
+                    }
+                }
+            });
+        });
+    }
+
+    let editingLibIndex = -1;
+    function openEditLibModal(lib = null) {
+        const modal = new bootstrap.Modal(document.getElementById('editLibModal'));
+        document.getElementById('libFeaturesContainer').innerHTML = '';
+        if (lib && !lib.isPreset) {
+            editingLibIndex = customLibraries.findIndex(l => l.name === lib.name && l.keyword === lib.keyword);
+            document.getElementById('libName').value = lib.name;
+            document.getElementById('libKeyword').value = lib.keyword;
+            document.getElementById('libFormula').value = lib.formula;
+            if (lib.features) {
+                lib.features.forEach(feat => addFeatureToLibForm(feat));
+            }
+            document.getElementById('editLibTitle').innerText = '编辑因子库';
+        } else {
+            editingLibIndex = -1;
+            document.getElementById('editLibTitle').innerText = '新建因子库';
+            addFeatureToLibForm(null);
+        }
+        modal.show();
+    }
+
+    function addFeatureToLibForm(feat = null) {
+        const container = document.getElementById('libFeaturesContainer');
+        const idx = container.children.length;
+        const div = document.createElement('div');
+        div.className = 'modal-feature-item mb-2';
+        div.dataset.idx = idx;
+
+        const featType = feat?.type || 'numeric';
+        const dist = feat?.distribution || 'normal';
+        const paramValue = feat?.normalParams || feat?.uniformRange || '';
+
+        div.innerHTML = `
+            <div class="row g-2">
+                <div class="col-md-3"><input type="text" class="form-control form-control-sm" placeholder="特征名" value="${feat ? escapeHtml(feat.name) : ''}"></div>
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm feature-type">
+                        <option value="numeric" ${featType === 'numeric' ? 'selected' : ''}>数值型</option>
+                        <option value="categorical" ${featType === 'categorical' ? 'selected' : ''}>分类型</option>
+                    </select>
+                </div>
+                <div class="col-md-6 numeric-params" style="${featType === 'categorical' ? 'display:none' : ''}">
+                    <div class="row g-1">
+                        <div class="col-6">
+                            <select class="form-select form-select-sm dist-type">
+                                <option value="normal" ${dist === 'normal' ? 'selected' : ''}>正态分布</option>
+                                <option value="uniform" ${dist === 'uniform' ? 'selected' : ''}>均匀分布</option>
+                                <option value="lognormal" ${dist === 'lognormal' ? 'selected' : ''}>对数正态</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <input type="text" class="form-control form-control-sm param-input" placeholder="参数" value="${escapeHtml(paramValue)}">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 categorical-params" style="${featType === 'numeric' ? 'display:none' : ''}">
+                    <input type="text" class="form-control form-control-sm" placeholder="类别:权重" value="${feat?.catWeights || ''}">
+                </div>
+                <div class="col-md-1"><button type="button" class="btn btn-sm btn-outline-danger remove-feature-btn"><i class="fa fa-trash"></i></button></div>
+            </div>
+        `;
+        container.appendChild(div);
+
+        const typeSelect = div.querySelector('.feature-type');
+        const numericDiv = div.querySelector('.numeric-params');
+        const categoricalDiv = div.querySelector('.categorical-params');
+        typeSelect.addEventListener('change', () => {
+            const isNum = typeSelect.value === 'numeric';
+            numericDiv.style.display = isNum ? '' : 'none';
+            categoricalDiv.style.display = isNum ? 'none' : '';
+        });
+
+        const distSelect = div.querySelector('.dist-type');
+        const paramInput = div.querySelector('.param-input');
+        if (distSelect && paramInput) {
+            distSelect.addEventListener('change', () => {
+                const newDist = distSelect.value;
+                if (newDist === 'normal') paramInput.placeholder = '均值,标准差';
+                else if (newDist === 'uniform') paramInput.placeholder = '最小值,最大值';
+                else if (newDist === 'lognormal') paramInput.placeholder = '均值,标准差';
+            });
+            distSelect.dispatchEvent(new Event('change'));
+        }
+
+        div.querySelector('.remove-feature-btn').addEventListener('click', () => div.remove());
+    }
+
+    function saveCurrentLibrary() {
+        const name = document.getElementById('libName').value.trim();
+        if (!name) { alert('请输入因子库名称'); return; }
+        const keyword = document.getElementById('libKeyword').value.trim() || name;
+        const formula = document.getElementById('libFormula').value.trim();
+        const features = [];
+        document.querySelectorAll('#libFeaturesContainer .modal-feature-item').forEach(div => {
+            const nameInput = div.querySelector('input[placeholder="特征名"]');
+            const featName = nameInput?.value.trim();
+            if (!featName) return;
+            const type = div.querySelector('.feature-type').value;
+            const featObj = { name: featName, type: type };
+            if (type === 'numeric') {
+                const distSelect = div.querySelector('.dist-type');
+                const paramInput = div.querySelector('.param-input');
+                const distribution = distSelect ? distSelect.value : 'normal';
+                const paramValue = paramInput ? paramInput.value.trim() : '';
+                featObj.distribution = distribution;
+                if (distribution === 'normal') {
+                    featObj.normalParams = paramValue;
+                } else if (distribution === 'uniform') {
+                    featObj.uniformRange = paramValue;
+                } else if (distribution === 'lognormal') {
+                    featObj.normalParams = paramValue;
+                }
+            } else {
+                featObj.catWeights = div.querySelector('.categorical-params input')?.value.trim() || '';
+            }
+            features.push(featObj);
+        });
+        if (features.length === 0) { alert('至少需要一个特征'); return; }
+        const newLib = { name, keyword, formula, features };
+        if (editingLibIndex >= 0) {
+            customLibraries[editingLibIndex] = newLib;
+        } else {
+            customLibraries.push(newLib);
+        }
+        saveCustomLibraries();
+        bootstrap.Modal.getInstance(document.getElementById('editLibModal')).hide();
+        renderFactorLibList();
+        alert('因子库保存成功');
+    }
+
+    function importLibraryToCurrentCtq(lib) {
+        const selected = allCtqs.filter(ctq => selectedCtqIds.includes(ctq.ctq_id));
+        if (selected.length === 0) {
+            alert('请先选择一个CTQ');
+            return;
+        }
+        let targetCtqId;
+        if (selected.length === 1) {
+            targetCtqId = selected[0].ctq_id;
+        } else {
+            const choice = prompt(`多个CTQ被选中，请输入要导入的CTQ ID（${selected.map(c => `${c.ctq_id}:${c.ctq_name}`).join(', ')}）`);
+            if (!choice) return;
+            targetCtqId = parseInt(choice);
+            if (!selected.find(c => c.ctq_id === targetCtqId)) { alert('无效ID'); return; }
+        }
+        const features = lib.features.map(f => {
+            const base = { name: f.name, type: f.type };
+            if (f.type === 'numeric') {
+                base.distribution = f.distribution || 'normal';
+                if (base.distribution === 'normal') base.normalParams = f.normalParams || '0,1';
+                else if (base.distribution === 'uniform') base.uniformRange = f.uniformRange || '0,1';
+                else if (base.distribution === 'lognormal') base.normalParams = f.normalParams || '1,0.5';
+            } else {
+                base.catWeights = f.catWeights || '';
+            }
+            return base;
+        });
+        ctqFeatures[targetCtqId] = features;
+        ctqFormulas[targetCtqId] = lib.formula;
+        ctqForceCpk[targetCtqId] = { enabled: true, target_cpk: 1.33, noise_std: 0 };
+        renderCtqCards();
+        alert(`已导入因子库「${lib.name}」到CTQ ID ${targetCtqId}`);
+    }
+
+    // ========== 页面初始化 ==========
     document.getElementById('saveConfigBtn').addEventListener('click', saveConfig);
     document.getElementById('loadConfigBtn').addEventListener('click', loadConfig);
     document.getElementById('previewBtn').addEventListener('click', previewConfiguration);
+    document.getElementById('manageFactorLibBtn').addEventListener('click', () => {
+        renderFactorLibList();
+        new bootstrap.Modal(document.getElementById('factorLibModal')).show();
+    });
+    document.getElementById('addLibBtn').addEventListener('click', () => openEditLibModal(null));
+    document.getElementById('saveLibBtn').addEventListener('click', saveCurrentLibrary);
+    document.getElementById('addFeatureBtn').addEventListener('click', () => addFeatureToLibForm(null));
 
+    loadCustomLibraries();
     (function autoLoad() {
         if (localStorage.getItem(STORAGE_KEY) && confirm('检测到之前保存的配置，是否加载？')) {
             loadConfig();

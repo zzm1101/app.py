@@ -412,6 +412,8 @@ def clear_data():
         ProductionData.query.delete()
         LossResult.query.delete()
         db.session.commit()
+        # ========== 新增下面这一行 ==========
+        cache.delete('production_list_view')  # 删除生产列表页面的缓存
         clear_all_caches()
         flash("✅ 所有生产数据及损失结果已清空", "success")
     except Exception as e:
