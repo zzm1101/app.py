@@ -413,13 +413,6 @@ def train_model_task(app, ctq_id, product_item, model_type, hyperparams, task_id
                 _tasks[task_id] = {'status': 'failed', 'progress': 0, 'error': str(e)}
 
 
-# ========== 以下路由与之前完全一致，为节省篇幅只列出重要部分 ==========
-# 请将前面回答中完整的路由部分复制到此（包括 analysis_page, upload_features, get_features, set_feature_type,
-# list_model_types, train, train_status, get_models, get_importance, shap_summary,
-# partial_dependence, diagnostics, feature_correlation, clear_features, settings 等）
-# 注意确保所有路由函数定义完整。
-
-
 # ========== 路由 ==========
 
 @influence_bp.route('/analysis')
@@ -797,6 +790,64 @@ def feature_correlation(ctq_id):
     corr = num_X.corr().round(4).values.tolist()
     features = num_X.columns.tolist()
     return jsonify({'features': features, 'correlation': corr})
+
+
+@influence_bp.route('/api/feature_target_correlation/<int:ctq_id>')
+def feature_target_correlation(ctq_id):
+    """返回各数值型特征与目标值的皮尔逊相关系数"""
+    if not current_app.config.get('ENABLE_ML_INFLUENCE', False):
+        return jsonify({'error': '模块未启用'}), 403
+    product_item = request.args.get('product_item', '')
+    X, y, _, _ = build_training_dataset(ctq_id, product_item)
+    if X is None or y is None:
+        return jsonify({'error': '无数据'}), 400
+    num_X = X.select_dtypes(include=[np.number])
+    if num_X.empty:
+        return jsonify({'features': [], 'correlations': []})
+    correlations = num_X.corrwith(y).round(4)
+    features = correlations.index.tolist()
+    values = correlations.values.tolist()
+    return jsonify({'features': features, 'correlations': values})
+
+
+@influence_bp.route('/api/variance_contribution/<int:ctq_id>/<model_type>')
+def variance_contribution(ctq_id, model_type):
+    """基于 SHAP 方差分解，返回每个特征解释目标方差的百分比"""
+    if not current_app.config.get('ENABLE_ML_INFLUENCE', False):
+        return jsonify({'error': '模块未启用'}), 403
+    product_item = request.args.get('product_item', '')
+    pipeline, X_orig, X_preprocessed, y, feature_names = get_model_and_data(ctq_id, product_item, model_type)
+    if pipeline is None:
+        return jsonify({'error': '模型不存在'}), 404
+
+    import shap
+    model = pipeline.named_steps['model']
+    try:
+        if model_type in ('lightgbm', 'xgboost', 'random_forest', 'decision_tree'):
+            explainer = shap.TreeExplainer(model)
+            shap_values = explainer.shap_values(X_preprocessed)
+            if isinstance(shap_values, list):
+                shap_values = shap_values[0]
+        elif model_type == 'linear':
+            explainer = shap.LinearExplainer(model, X_preprocessed)
+            shap_values = explainer.shap_values(X_preprocessed)
+        else:
+            return jsonify({'error': f'不支持的模型类型 {model_type}'}), 400
+    except Exception as e:
+        return jsonify({'error': f'SHAP 计算失败: {str(e)}'}), 500
+
+    var_shap = np.var(shap_values, axis=0)
+    var_total = np.var(y)
+    if var_total > 0:
+        var_ratio = var_shap / var_total
+    else:
+        var_ratio = np.zeros(len(feature_names))
+
+    contributions = {feature_names[i]: round(float(var_ratio[i]), 4) for i in range(len(feature_names))}
+    sorted_contrib = sorted(contributions.items(), key=lambda x: x[1], reverse=True)
+    features = [x[0] for x in sorted_contrib]
+    values = [x[1] for x in sorted_contrib]
+    return jsonify({'features': features, 'values': values})
 
 
 @influence_bp.route('/api/clear_features/<int:ctq_id>', methods=['POST'])

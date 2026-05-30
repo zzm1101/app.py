@@ -4,7 +4,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ========== 顶层变量（供直接导入） ==========
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+# ===== 原系统常量（模块级，供各模块直接导入） =====
 DAIRY_GB = {
     "protein_min": 2.9,
     "acidity_min": 70,
@@ -47,8 +49,6 @@ TARGET_METHODS = {
     "method_7": {"name": "VOC客户反馈法", "desc": "暂未开放"}
 }
 
-PRODUCT_ITEMS = ["原味", "草莓", "蓝莓", "黄桃", "高蛋白"]
-
 PAF_CATEGORY = {
     "prevention": "预防成本",
     "appraisal": "鉴定成本",
@@ -57,8 +57,8 @@ PAF_CATEGORY = {
 }
 
 
-# ========== Config 类（供 app 和需要类属性的地方使用） ==========
 class Config:
+    # ===== 原系统配置 =====
     SECRET_KEY = os.environ.get('SECRET_KEY', 'yogurt_qlf_default_dev_key_change_me')
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///yogurt_qlf.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -66,26 +66,78 @@ class Config:
     PER_PAGE = 20
     SEND_FILE_MAX_AGE_DEFAULT = 3600
 
-    # 缓存配置：优先使用Redis，否则SimpleCache
+    # 缓存配置
     CACHE_TYPE = os.environ.get('CACHE_TYPE', 'SimpleCache')
     CACHE_REDIS_URL = os.environ.get('REDIS_URL', None)
     CACHE_DEFAULT_TIMEOUT = 60
 
     MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 20 * 1024 * 1024))  # 20MB
     FETCH_BATCH_SIZE = 1000
-    MAX_BATCHES_FOR_SPC = 50      # SPC最多分析批次数量
-    MAX_SAMPLES_FOR_SPC = 5000    # SPC最大原始样本数
+    MAX_BATCHES_FOR_SPC = 50
+    MAX_SAMPLES_FOR_SPC = 5000
 
-    # 性能开关：是否在启动时预热缓存
+    # 性能开关
     CACHE_WARMUP = os.environ.get('CACHE_WARMUP', 'true').lower() == 'true'
 
     # 机器学习影响分析模块开关
     ENABLE_ML_INFLUENCE = os.environ.get('ENABLE_ML_INFLUENCE', 'false').lower() == 'true'
 
-    # 保持顶层变量的访问
-    DAIRY_GB = DAIRY_GB
-    FMEA_SEVERITY_K = FMEA_SEVERITY_K
-    FEATURE_TYPE = FEATURE_TYPE
-    TARGET_METHODS = TARGET_METHODS
-    PRODUCT_ITEMS = PRODUCT_ITEMS
-    PAF_CATEGORY = PAF_CATEGORY
+    # ===== 密封监测系统配置 =====
+    SEAL_DB_PATH = os.environ.get('SEAL_DB_PATH', os.path.join(BASE_DIR, 'seal_history.db'))
+    SEAL_DATA_DIR = os.environ.get('SEAL_DATA_DIR', os.path.join(BASE_DIR, 'seal_data'))
+    SEAL_MODEL_DIR = os.environ.get('SEAL_MODEL_DIR', os.path.join(BASE_DIR, 'seal_models'))
+
+    SEAL_MAX_CONCURRENT_TASKS = int(os.environ.get('SEAL_MAX_CONCURRENT_TASKS', 3))
+
+    SEAL_HEALTH_NORMAL = float(os.environ.get('SEAL_HEALTH_NORMAL', 0.8))
+    SEAL_HEALTH_WARNING = float(os.environ.get('SEAL_HEALTH_WARNING', 0.5))
+    SEAL_HEALTH_ALARM = float(os.environ.get('SEAL_HEALTH_ALARM', 0.3))
+
+    SEAL_CIP_TEMPERATURE_THRESHOLD = float(os.environ.get('SEAL_CIP_TEMPERATURE_THRESHOLD', 70))
+    SEAL_EMPTY_CURRENT_THRESHOLD = float(os.environ.get('SEAL_EMPTY_CURRENT_THRESHOLD', 8))
+    SEAL_TRANSITION_DURATION_MIN = int(os.environ.get('SEAL_TRANSITION_DURATION_MIN', 30))
+
+    SEAL_VAE_SEQ_LEN = int(os.environ.get('SEAL_VAE_SEQ_LEN', 30))
+    SEAL_VAE_HIDDEN_DIM = int(os.environ.get('SEAL_VAE_HIDDEN_DIM', 64))
+    SEAL_VAE_LATENT_DIM = int(os.environ.get('SEAL_VAE_LATENT_DIM', 16))
+    SEAL_VAE_EPOCHS = int(os.environ.get('SEAL_VAE_EPOCHS', 80))
+    SEAL_VAE_BATCH_SIZE = int(os.environ.get('SEAL_VAE_BATCH_SIZE', 64))
+
+    SEAL_WINDOW_SIZE = int(os.environ.get('SEAL_WINDOW_SIZE', 10))
+
+    SEAL_MAX_CONTENT_LENGTH = int(os.environ.get('SEAL_MAX_CONTENT_LENGTH', 100 * 1024 * 1024))
+    SEAL_ALLOWED_EXTENSIONS = {'csv'}
+
+    SEAL_SENSOR_COLUMNS = {
+        'required': ['timestamp'],
+        'numeric': ['ae_energy', 'ae_count', 'vibration_rms', 'temperature', 'current', 'pressure'],
+        'optional': []
+    }
+
+    SEAL_CONDITION_COLUMNS = {
+        'cip_temp': 'temperature',
+        'empty_current': 'current'
+    }
+
+    SEAL_FEATURE_RECIPES = {
+        'ae_energy': ['mean', 'std', 'wavelet_entropy'],
+        'ae_count': ['mean'],
+        'vibration_rms': ['mean', 'kurtosis'],
+        'temperature': ['mean', 'gradient'],
+        'current': ['mean'],
+        'pressure': ['diff_abs'],
+    }
+
+    @classmethod
+    def get_with_overrides(cls, overrides: dict):
+        """动态生成配置对象，支持运行时覆盖参数（用于密封系统异步任务）"""
+        new_config = {}
+        for key in dir(cls):
+            if not key.startswith('_') and isinstance(getattr(cls, key), (int, float, str, bool, list, dict)):
+                new_config[key] = overrides.get(key, getattr(cls, key))
+        return type('DynamicConfig', (), new_config)
+
+
+# 创建必要目录
+for path in [Config.SEAL_DATA_DIR, Config.SEAL_MODEL_DIR]:
+    os.makedirs(path, exist_ok=True)

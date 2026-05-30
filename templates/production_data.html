@@ -24,7 +24,7 @@
     </div>
 </div>
 
-<!-- KPI 卡片（新版渐变色） -->
+<!-- KPI 卡片 -->
 <div class="row mb-4">
     <div class="col-xl-3 col-lg-3 col-md-6 mb-3">
         <div class="card kpi-card kpi-primary">
@@ -64,7 +64,7 @@
     </div>
 </div>
 
-<!-- 批量导入卡片（保持原样） -->
+<!-- 批量导入卡片 -->
 <div class="card mb-4">
     <div class="card-body">
         <div class="row align-items-center">
@@ -90,7 +90,7 @@
     </div>
 </div>
 
-<!-- 数据表格卡片（保持原样） -->
+<!-- 数据表格卡片 -->
 <div class="card">
     <div class="card-body">
         <div id="tableLoading" class="text-center py-5">
@@ -128,7 +128,7 @@
     </div>
 </div>
 
-<!-- 公共编辑模态框（保持不变） -->
+<!-- 公共编辑模态框 -->
 <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -161,7 +161,7 @@
     </div>
 </div>
 
-<!-- 新增数据模态框（保持不变） -->
+<!-- 新增数据模态框 -->
 <div class="modal fade" id="addDataModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -212,7 +212,7 @@ $(document).ready(function() {
     $('#tableContainer').hide();
     $('#tableError').hide();
 
-    // DataTables 服务端分页
+    // DataTables 服务端分页，启用 cache: false 防止浏览器缓存 AJAX 响应
     var table = $('#prodTable').DataTable({
         processing: true,
         serverSide: true,
@@ -220,6 +220,7 @@ $(document).ready(function() {
             url: "{{ url_for('production.api_production_data') }}",
             type: 'GET',
             dataSrc: 'data',
+            cache: false,          // 关键：禁用 AJAX 缓存
             error: function(xhr, error, thrown) {
                 $('#tableLoading').hide();
                 $('#tableError').show();
@@ -292,14 +293,6 @@ $(document).ready(function() {
                 }
             });
         }
-    });
-
-    // 编辑按钮（如果未来需要）
-    $(document).on('click', '.edit-btn', function() {
-        var btn = $(this);
-        var id = btn.data('id');
-        $('#editForm').attr('action', '/production/edit/' + id);
-        // 填充表单...（保持原逻辑）
     });
 
     // CTQ 下拉联动

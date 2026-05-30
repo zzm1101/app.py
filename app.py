@@ -3,6 +3,8 @@ from flask import Flask
 from config import Config
 import os
 from dotenv import load_dotenv
+import json
+from pathlib import Path
 
 load_dotenv()
 
@@ -21,19 +23,39 @@ csrf.init_app(app)
 # ========== 豁免通用预测模块的 CSRF 保护（不影响原有业务） ==========
 from routes.ml_tool import ml_tool_bp
 csrf.exempt(ml_tool_bp)
+
 from extensions import cache
 cache.init_app(app)
+
 from models.database import db
 db.init_app(app)
+
 from routes import register_blueprints
 register_blueprints(app)
+
 # ========== 豁免模拟数据生成器的 CSRF 保护 ==========
 from routes.simulate import simulate_bp
 csrf.exempt(simulate_bp)
 
+# ========== 密封监测系统集成 ==========
+from seal_monitor import seal_bp
+app.register_blueprint(seal_bp)
+csrf.exempt(seal_bp)   # 密封系统前端未使用 CSRF token
+
 from models.models import CTQConfig, ProductionData, LossResult, DecayConfig, SPCRecord
 from sqlalchemy import text, inspect
 from utils import normalize_product_item
+
+
+def load_default_ctqs():
+    """从 data/default_ctqs.json 加载默认 CTQ 配置"""
+    path = Path(__file__).parent / 'data' / 'default_ctqs.json'
+    if not path.exists():
+        app.logger.warning("default_ctqs.json 不存在，无法加载默认 CTQ")
+        return []
+    with open(path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
 
 with app.app_context():
     db.create_all()
@@ -105,48 +127,25 @@ with app.app_context():
     db.session.execute(
         text('CREATE INDEX IF NOT EXISTS idx_ctq_feature_severity ON ctq_config (feature_type, fmea_severity)'))
 
-    # 初始化默认 CTQ 配置（仅当表为空时）
+    # 初始化默认 CTQ 配置（仅当表为空时）—— 从 JSON 加载
     if not CTQConfig.query.first():
-        default_ctq = [
-            CTQConfig(ctq_name="蛋白质含量", feature_type="nominal", process_link="原料标准化", is_ccp="是",
-                      fmea_severity=6, gb_code="GB 19302-2010", target_m=3.1, usl=3.5, lsl=2.9, delta0=0.6,
-                      delta=0.2, a0=3000, a=800, hidden_loss_coef=1.2, version=1),
-            CTQConfig(ctq_name="滴定酸度", feature_type="nominal", process_link="发酵环节", is_ccp="是",
-                      fmea_severity=5, gb_code="GB 19302-2010", target_m=75, usl=85, lsl=70, delta0=15,
-                      delta=5, a0=2500, a=600, hidden_loss_coef=1.1, version=1),
-            CTQConfig(ctq_name="灌装净含量", feature_type="nominal", process_link="灌装环节", is_ccp="否",
-                      fmea_severity=4, gb_code="JJF 1070", target_m=200, usl=204.5, lsl=195.5, delta0=9,
-                      delta=4.5, a0=1.2, a=0.3, asymmetric_loss="是", k_upper=0.0037, k_lower=0.0148,
-                      a_upper=0.6, a_lower=1.2, hidden_loss_coef=1.0, version=1),
-            CTQConfig(ctq_name="菌落总数", feature_type="smaller", process_link="成品检验", is_ccp="是",
-                      fmea_severity=10, gb_code="GB 19302-2010", target_m=0, usl=100, lsl=0, delta0=100,
-                      delta=50, a0=50000, a=50000, hidden_loss_coef=5.0, version=1),
-            CTQConfig(ctq_name="乳清析出率", feature_type="smaller", process_link="发酵环节", is_ccp="否",
-                      fmea_severity=6, gb_code="内控标准", target_m=0, usl=5, lsl=0, delta0=5,
-                      delta=2, a0=2500, a=700, hidden_loss_coef=1.3, version=1),
-            CTQConfig(ctq_name="保质期终点活菌数", feature_type="larger", process_link="仓储物流", is_ccp="是",
-                      fmea_severity=8, gb_code="GB 19302-2010", target_m=1e7, usl=1e9, lsl=1e6, delta0=9e6,
-                      delta=5e6, a0=3000, a=0, hidden_loss_coef=1.5, version=1),
-            CTQConfig(ctq_name="冷链运输温度", feature_type="smaller", process_link="仓储物流", is_ccp="是",
-                      fmea_severity=9, gb_code="GB 14881-2013", target_m=2, usl=6, lsl=0, delta0=4,
-                      delta=2, a0=8000, a=1200, hidden_loss_coef=1.8, version=1),
-        ]
-        db.session.add_all(default_ctq)
+        default_ctq_data = load_default_ctqs()
+        for item in default_ctq_data:
+            db.session.add(CTQConfig(**item))
         db.session.commit()
-        print("✅ 已初始化默认CTQ配置")
+        print("✅ 已初始化默认CTQ配置（从 JSON 加载）")
 
     # 可选：缓存预热
     if app.config['CACHE_WARMUP']:
         try:
             from routes.dashboard import _build_dashboard_data
-
             _build_dashboard_data(LossResult.query, include_spc=False)
             print("✅ 缓存预热完成")
         except Exception as e:
             print(f"⚠️ 缓存预热失败: {e}")
 
 if __name__ == "__main__":
-    print("=" * 50)
+    print("=" * 60)
     print("✅ 酸奶工厂田口QLF质量损失系统启动成功（性能优化版 + 通用预测模块）")
     print("🌐 请打开浏览器访问：http://127.0.0.1:5000")
     if app.config.get('ENABLE_ML_INFLUENCE', False):
@@ -154,5 +153,7 @@ if __name__ == "__main__":
     else:
         print("🧠 CTQ影响因素分析模块未启用（如需使用请设置 ENABLE_ML_INFLUENCE=true）")
     print("📊 通用预测模块入口：http://127.0.0.1:5000/ml-tool")
-    print("=" * 50)
-    app.run(debug=False, host="0.0.0.0", port=5000)
+    print("🔧 密封磨损监测系统入口：http://127.0.0.1:5000/seal")
+    print("📈 模拟数据生成模块入口：http://127.0.0.1:5000/simulate")
+    print("=" * 60)
+    app.run(debug=False, host="0.0.0.0", port=5001)

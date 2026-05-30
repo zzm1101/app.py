@@ -2,81 +2,20 @@
 {% block title %}CTQ影响因素分析 - {{ ctq.ctq_name }}{% endblock %}
 {% block extra_css %}
 <style>
-    .analysis-container {
-        padding: 0 1.5rem;
-    }
-    @media (min-width: 768px) {
-        .analysis-container { padding: 0 2rem; }
-    }
-    @media (min-width: 1400px) {
-        .analysis-container { padding: 0 2.5rem; }
-    }
-
-    .analysis-header {
-        background: #fff;
-        border-radius: var(--radius);
-        padding: 1rem 1.5rem;
-        box-shadow: var(--shadow-sm);
-        margin-bottom: 1.5rem;
-    }
-
-    .card {
-        border: none;
-        border-radius: var(--radius);
-        box-shadow: var(--shadow);
-        background: #fff;
-        margin-bottom: 1.2rem;
-    }
-    .card-header {
-        background: transparent;
-        border-bottom: 1px solid var(--border);
-        font-weight: 600;
-        color: var(--text);
-        padding: 0.8rem 1.2rem;
-    }
-    .card-body {
-        padding: 1rem 1.2rem;
-    }
-
-    .upload-card .card-body {
-        background: #f8faff;
-    }
-
-    .feature-list {
-        max-height: 320px;
-        overflow-y: auto;
-    }
-    .feature-list .list-group-item {
-        border: none;
-        border-bottom: 1px solid var(--border);
-        font-size: 0.875rem;
-        padding: 0.6rem 1rem;
-    }
-    .feature-badge {
-        background: var(--primary-bg);
-        color: var(--primary);
-        font-weight: 500;
-    }
-
-    .chart-container {
-        height: 380px;
-        width: 100%;
-        background: #fff;
-        border-radius: 12px;
-        padding: 4px;
-    }
-
-    .advanced-toggle {
-        color: var(--primary);
-        font-weight: 500;
-    }
-
-    @media (max-width: 768px) {
-        .analysis-header {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-    }
+    .analysis-container { padding: 0 1.5rem; }
+    @media (min-width: 768px) { .analysis-container { padding: 0 2rem; } }
+    @media (min-width: 1400px) { .analysis-container { padding: 0 2.5rem; } }
+    .analysis-header { background: #fff; border-radius: var(--radius); padding: 1rem 1.5rem; box-shadow: var(--shadow-sm); margin-bottom: 1.5rem; }
+    .card { border: none; border-radius: var(--radius); box-shadow: var(--shadow); background: #fff; margin-bottom: 1.2rem; }
+    .card-header { background: transparent; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--text); padding: 0.8rem 1.2rem; }
+    .card-body { padding: 1rem 1.2rem; }
+    .upload-card .card-body { background: #f8faff; }
+    .feature-list { max-height: 320px; overflow-y: auto; }
+    .feature-list .list-group-item { border: none; border-bottom: 1px solid var(--border); font-size: 0.875rem; padding: 0.6rem 1rem; }
+    .feature-badge { background: var(--primary-bg); color: var(--primary); font-weight: 500; }
+    .chart-container { height: 380px; width: 100%; background: #fff; border-radius: 12px; padding: 4px; }
+    .advanced-toggle { color: var(--primary); font-weight: 500; }
+    @media (max-width: 768px) { .analysis-header { flex-direction: column; align-items: flex-start; } }
 </style>
 {% endblock %}
 
@@ -174,10 +113,34 @@
         </div>
     </div>
 
+    <!-- 特征重要性选项卡（三标签） -->
     <div class="card mt-2">
-        <div class="card-header"><i class="fa fa-star me-2" style="color:var(--primary);"></i>特征重要性（模型全局贡献）</div>
+        <div class="card-header">
+            <i class="fa fa-star me-2" style="color:var(--primary);"></i>特征重要性（模型全局贡献）
+        </div>
         <div class="card-body p-1">
-            <div id="importanceChart" style="height:400px;"></div>
+            <ul class="nav nav-tabs" id="importanceTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="imp-tab" data-bs-toggle="tab" data-bs-target="#impPanel" type="button" role="tab">模型重要性</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="corr-tab" data-bs-toggle="tab" data-bs-target="#corrPanel" type="button" role="tab">线性相关</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="var-tab" data-bs-toggle="tab" data-bs-target="#varPanel" type="button" role="tab">方差贡献</button>
+                </li>
+            </ul>
+            <div class="tab-content p-1" id="importanceTabContent">
+                <div class="tab-pane fade show active" id="impPanel" role="tabpanel">
+                    <div id="importanceChart" style="height:380px;"></div>
+                </div>
+                <div class="tab-pane fade" id="corrPanel" role="tabpanel">
+                    <div id="corrTargetChart" style="height:380px;"></div>
+                </div>
+                <div class="tab-pane fade" id="varPanel" role="tabpanel">
+                    <div id="varContributionChart" style="height:380px;"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -189,51 +152,32 @@
     </ul>
     <div class="tab-content mt-2">
         <div class="tab-pane fade show active" id="tabSHAP">
-            <div class="card">
-                <div class="card-body p-1">
-                    <div id="shapChart" class="chart-container"></div>
-                    <div class="text-muted small mt-1 text-center"><i class="fa fa-info-circle me-1"></i>红色正向贡献，蓝色负向贡献</div>
-                </div>
-            </div>
+            <div class="card"><div class="card-body p-1"><div id="shapChart" class="chart-container"></div><div class="text-muted small mt-1 text-center"><i class="fa fa-info-circle me-1"></i>红色正向贡献，蓝色负向贡献</div></div></div>
         </div>
         <div class="tab-pane fade" id="tabPDP">
-            <div class="card">
-                <div class="card-body p-1">
-                    <div class="row mb-2"><div class="col-md-4"><label class="small">选择特征</label><select id="pdpFeatureSelect" class="form-select form-select-sm"></select></div></div>
-                    <div id="pdpChart" class="chart-container"></div>
-                </div>
-            </div>
+            <div class="card"><div class="card-body p-1"><div class="row mb-2"><div class="col-md-4"><label class="small">选择特征</label><select id="pdpFeatureSelect" class="form-select form-select-sm"></select></div></div><div id="pdpChart" class="chart-container"></div></div></div>
         </div>
         <div class="tab-pane fade" id="tabDiagnostics">
-            <div class="card">
-                <div class="card-body p-1">
-                    <div class="row">
-                        <div class="col-md-6"><div id="actualVsPredChart" class="chart-container" style="height:320px;"></div><div class="text-center small mt-1">实际值 vs 预测值</div></div>
-                        <div class="col-md-6"><div id="residualChart" class="chart-container" style="height:320px;"></div><div class="text-center small mt-1">残差 vs 预测值</div></div>
-                    </div>
-                    <div id="diagnosticsMetrics" class="metrics-box text-center"></div>
-                </div>
-            </div>
+            <div class="card"><div class="card-body p-1"><div class="row"><div class="col-md-6"><div id="actualVsPredChart" class="chart-container" style="height:320px;"></div><div class="text-center small mt-1">实际值 vs 预测值</div></div><div class="col-md-6"><div id="residualChart" class="chart-container" style="height:320px;"></div><div class="text-center small mt-1">残差 vs 预测值</div></div></div><div id="diagnosticsMetrics" class="metrics-box text-center"></div></div></div>
         </div>
         <div class="tab-pane fade" id="tabCorrelation">
-            <div class="card">
-                <div class="card-body p-1">
-                    <div id="corrChart" class="chart-container"></div>
-                </div>
-            </div>
+            <div class="card"><div class="card-body p-1"><div id="corrChart" class="chart-container"></div></div></div>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <script>
-/* ========== 工具函数 ========== */
+/* ========== 全局变量 ========== */
 function checkFileSize(input) { if(input.files[0] && input.files[0].size>20*1024*1024){alert('文件大小不能超过20MB');input.value='';} }
 const ctqId = {{ ctq.ctq_id }}; const productItem = "{{ product_item }}"; const csrfToken = "{{ csrf_token() }}";
-let currentModelType=null,shapChart=null,pdpChart=null,actualVsPredChart=null,residualChart=null,corrChart=null;
+let currentModelType=null;
+let importanceChart=null, corrTargetChart=null, varContributionChart=null;
+let shapChart=null, pdpChart=null, actualVsPredChart=null, residualChart=null, corrChart=null;
 
 function sciFormatter(v){ if(v===undefined||v===null)return''; if(Math.abs(v)>=1e6||(Math.abs(v)<0.1&&v!==0))return v.toExponential(2); return v.toFixed(2); }
 
+// 高级选项卡 resize
 document.querySelectorAll('#advancedTabs a[data-bs-toggle="tab"]').forEach(el=>{
     el.addEventListener('shown.bs.tab', e => {
         let id = e.target.getAttribute('href').replace('#','');
@@ -244,6 +188,15 @@ document.querySelectorAll('#advancedTabs a[data-bs-toggle="tab"]').forEach(el=>{
             if (residualChart) residualChart.resize();
         }
         if (id === 'tabCorrelation' && corrChart) corrChart.resize();
+    });
+});
+// 特征重要性选项卡 resize
+document.querySelectorAll('#importanceTabs button[data-bs-toggle="tab"]').forEach(btn => {
+    btn.addEventListener('shown.bs.tab', function(e) {
+        const targetId = e.target.getAttribute('data-bs-target');
+        if (targetId === '#impPanel' && importanceChart) importanceChart.resize();
+        else if (targetId === '#corrPanel' && corrTargetChart) corrTargetChart.resize();
+        else if (targetId === '#varPanel' && varContributionChart) varContributionChart.resize();
     });
 });
 
@@ -316,32 +269,101 @@ async function loadModels(){
         c.appendChild(btn);
     });
 }
-async function showImportance(mt){
-    currentModelType = mt;
-    let res = await fetch(`/influence/api/importance/${ctqId}/${mt}?product_item=${encodeURIComponent(productItem)}`);
-    let d = await res.json();
-    if (d.error) { alert(d.error); return; }
-    drawImportanceChart(d.features, d.scores);
-    await loadSHAPSummary(mt);
-    await loadDiagnostics(mt);
-    await loadCorrelation();
-    await loadPDPFeatureSelect(mt);
-}
+
+// 绘制模型特征重要性图
 function drawImportanceChart(fs, sc){
     let dom = document.getElementById('importanceChart');
     if (echarts.getInstanceByDom(dom)) echarts.dispose(dom);
-    let ch = echarts.init(dom);
-    ch.setOption({
+    importanceChart = echarts.init(dom);
+    importanceChart.setOption({
         color: ['#6366f1'],
         tooltip: { trigger:'axis', axisPointer:{type:'shadow'}, formatter: p => `${p[0].name}: ${p[0].value.toFixed(4)}` },
         grid: { containLabel: true, left: '12%' },
         xAxis: { type:'value', name:'重要性' },
         yAxis: { type:'category', data:fs, name:'特征' },
-        series: [{ type:'bar', data:sc, itemStyle: { color: '#6366f1' }, label: { show:true, position:'right', formatter: v => v.data.toFixed(4) } }]
+        series: [{ type:'bar', data:sc, itemStyle: { color: '#6366f1' },
+            label: { show:true, position:'right', formatter: params => params.value.toFixed(4) }
+        }]
+    });
+}
+// 绘制皮尔逊相关系数图
+function drawCorrTargetChart(features, correlations) {
+    const dom = document.getElementById('corrTargetChart');
+    if (echarts.getInstanceByDom(dom)) echarts.dispose(dom);
+    corrTargetChart = echarts.init(dom);
+    const data = features.map((f, i) => ({ name: f, value: correlations[i] }))
+        .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+
+    corrTargetChart.setOption({
+        title: { text: '特征与目标相关系数', left: 'center', textStyle: { fontSize: 12 } },
+        tooltip: { trigger: 'axis', formatter: p => `${p[0].name}: ${p[0].value.toFixed(4)}` },
+        grid: { left: '18%', right: '10%', top: '15%', bottom: '8%' },
+        xAxis: { type: 'value', name: '相关系数', min: -1, max: 1 },
+        yAxis: { type: 'category', data: data.map(d => d.name) },
+        series: [{
+            type: 'bar',
+            data: data.map(d => d.value),
+            itemStyle: { color: function(p) { return p.value >= 0 ? '#6366f1' : '#ef4444'; } },
+            label: { show: true, position: 'right', formatter: params => params.value.toFixed(2) }
+        }]
+    });
+}
+// 绘制方差贡献度图
+function drawVarContributionChart(features, values) {
+    const dom = document.getElementById('varContributionChart');
+    if (echarts.getInstanceByDom(dom)) echarts.dispose(dom);
+    varContributionChart = echarts.init(dom);
+    const data = features.map((f, i) => ({ name: f, value: values[i] }));
+    varContributionChart.setOption({
+        title: { text: '方差贡献度（SHAP分解）', left: 'center', textStyle: { fontSize: 12 } },
+        tooltip: { trigger: 'axis', formatter: p => `${p[0].name}: ${(p[0].value*100).toFixed(2)}%` },
+        grid: { left: '18%', right: '10%', top: '15%', bottom: '8%' },
+        xAxis: { type: 'value', name: '方差占比' },
+        yAxis: { type: 'category', data: data.map(d => d.name) },
+        series: [{
+            type: 'bar',
+            data: data.map(d => d.value),
+            itemStyle: { color: '#10b981' },
+            label: { show: true, position: 'right', formatter: params => (params.value*100).toFixed(1) + '%' }
+        }]
     });
 }
 
-/* ========== SHAP 摘要图（修复版） ========== */
+// 核心函数：展示重要性（同时请求三个接口）
+async function showImportance(mt) {
+    currentModelType = mt;
+    try {
+        // 请求模型重要性
+        const impRes = await fetch(`/influence/api/importance/${ctqId}/${mt}?product_item=${encodeURIComponent(productItem)}`);
+        const impData = await impRes.json();
+        if (impData.error) { alert(impData.error); return; }
+        drawImportanceChart(impData.features, impData.scores);
+
+        // 请求相关系数
+        const corrRes = await fetch(`/influence/api/feature_target_correlation/${ctqId}?product_item=${encodeURIComponent(productItem)}`);
+        const corrData = await corrRes.json();
+        if (!corrData.error) {
+            drawCorrTargetChart(corrData.features, corrData.correlations);
+        }
+
+        // 请求方差贡献度
+        const varRes = await fetch(`/influence/api/variance_contribution/${ctqId}/${mt}?product_item=${encodeURIComponent(productItem)}`);
+        const varData = await varRes.json();
+        if (!varData.error) {
+            drawVarContributionChart(varData.features, varData.values);
+        }
+
+        // 加载高级图表（SHAP, 诊断, 相关性, PDP）
+        await loadSHAPSummary(mt);
+        await loadDiagnostics(mt);
+        await loadCorrelation();
+        await loadPDPFeatureSelect(mt);
+    } catch(err) {
+        alert('请求失败：' + err.message);
+    }
+}
+
+/* ========== SHAP 摘要图 ========== */
 async function loadSHAPSummary(mt){
     let res = await fetch(`/influence/api/shap/${ctqId}/${mt}?product_item=${encodeURIComponent(productItem)}`);
     let data = await res.json();
@@ -352,7 +374,6 @@ async function loadSHAPSummary(mt){
         return;
     }
 
-    // 构建 points 和特征名列表
     let points = [];
     let featureNames = [];
     data.shap_data.forEach((feat, idx) => {
@@ -361,78 +382,28 @@ async function loadSHAPSummary(mt){
         feat.values.forEach(v => {
             if (isNaN(v)) return;
             let jitter = (Math.random() - 0.5) * 0.6;
-            points.push({
-                x: v,
-                y: idx + jitter,
-                featureName: feat.feature,
-                shapValue: v
-            });
+            points.push({ x: v, y: idx + jitter, featureName: feat.feature, shapValue: v });
         });
     });
 
-    if (points.length === 0) {
-        dom.innerHTML = `<div class="alert alert-warning small">SHAP值全为零或无效</div>`;
-        return;
-    }
-
+    if (points.length === 0) { dom.innerHTML = `<div class="alert alert-warning small">SHAP值全为零或无效</div>`; return; }
     if (shapChart) shapChart.dispose();
     shapChart = echarts.init(dom);
 
     let maxAbs = Math.max(...points.map(p => Math.abs(p.x)));
     if (maxAbs === 0) maxAbs = 1;
-    // 关键修复：如果 SHAP 值绝对值太小，强制设置一个最小范围，避免颜色全白
     if (maxAbs < 0.1) maxAbs = 0.1;
 
-    let visualMap = {
-        min: -maxAbs,
-        max: maxAbs,
-        calculable: true,
-        inRange: { color: ['#3b82f6', '#a855f7', '#ef4444'] },  // 蓝 -> 紫 -> 红，去掉白色
-        outOfRange: { color: '#94a3b8' }
-    };
-
     shapChart.setOption({
-        tooltip: {
-            trigger: 'item',
-            formatter: function(params) {
-                let data = params.data;
-                return `<strong>${data.featureName}</strong><br/>SHAP值: ${data.shapValue.toFixed(4)}`;
-            }
-        },
-        xAxis: {
-            type: 'value',
-            name: 'SHAP值',
-            axisLabel: { formatter: sciFormatter },
-            splitLine: { lineStyle: { type: 'dashed' } }
-        },
-        yAxis: {
-            type: 'value',
-            name: '特征',
-            interval: 1,
-            min: -0.5,
-            max: featureNames.length - 0.5,
-            axisLabel: {
-                formatter: function(value) {
-                    let idx = Math.round(value);
-                    return featureNames[idx] || '';
-                }
-            },
-            axisTick: { show: false },
-            axisLine: { show: false },
-            splitLine: { show: false }
-        },
-        visualMap: visualMap,
-        series: [{
-            type: 'scatter',
-            data: points.map(p => ({ value: [p.x, p.y], featureName: p.featureName, shapValue: p.shapValue })),
-            symbolSize: 5,
-            itemStyle: { color: 'auto', opacity: 0.8 },
-            emphasis: { scale: 1.5 }
-        }]
+        tooltip: { trigger: 'item', formatter: params => `<strong>${params.data.featureName}</strong><br/>SHAP值: ${params.data.shapValue.toFixed(4)}` },
+        xAxis: { type: 'value', name: 'SHAP值', axisLabel: { formatter: sciFormatter }, splitLine: { lineStyle: { type: 'dashed' } } },
+        yAxis: { type: 'value', name: '特征', interval: 1, min: -0.5, max: featureNames.length - 0.5, axisLabel: { formatter: value => featureNames[Math.round(value)] || '' }, axisTick: { show: false }, axisLine: { show: false }, splitLine: { show: false } },
+        visualMap: { min: -maxAbs, max: maxAbs, calculable: true, inRange: { color: ['#3b82f6', '#a855f7', '#ef4444'] }, outOfRange: { color: '#94a3b8' } },
+        series: [{ type: 'scatter', data: points.map(p => ({ value: [p.x, p.y], featureName: p.featureName, shapValue: p.shapValue })), symbolSize: 5, itemStyle: { color: 'auto', opacity: 0.8 }, emphasis: { scale: 1.5 } }]
     });
 }
 
-/* ========== 部分依赖图（已修复横坐标） ========== */
+/* ========== 部分依赖图 ========== */
 async function loadPDPFeatureSelect(mt){
     let r = await fetch(`/influence/api/importance/${ctqId}/${mt}?product_item=${encodeURIComponent(productItem)}`);
     let d = await r.json(); if (d.error) return;
@@ -451,14 +422,7 @@ async function loadPDP(mt, f){
         tooltip: { trigger: 'axis' },
         xAxis: { type: 'value', name: f, scale: true, axisLabel: { formatter: sciFormatter } },
         yAxis: { type: 'value', name: '平均预测值', scale: true, axisLabel: { formatter: sciFormatter } },
-        series: [{
-            type: 'line',
-            data: lineData,
-            smooth: true,
-            lineStyle: { color: '#6366f1' },
-            symbol: 'circle',
-            symbolSize: 6
-        }]
+        series: [{ type: 'line', data: lineData, smooth: true, lineStyle: { color: '#6366f1' }, symbol: 'circle', symbolSize: 6 }]
     });
 }
 
@@ -486,6 +450,7 @@ async function loadDiagnostics(mt){
     });
     document.getElementById('diagnosticsMetrics').innerHTML = `R² = ${d.r2.toFixed(4)} &nbsp;|&nbsp; RMSE = ${sciFormatter(d.rmse)}`;
 }
+
 /* ========== 相关性热力图 ========== */
 async function loadCorrelation(){
     let r = await fetch(`/influence/api/correlation/${ctqId}?product_item=${encodeURIComponent(productItem)}`);
@@ -522,9 +487,23 @@ document.getElementById('trainBtn').onclick = async () => {
         if (res.ok) {
             let id = r.task_id, ival = setInterval(async () => {
                 let s = await fetch(`/influence/api/train_status/${id}`); let st = await s.json();
-                if (st.status === 'completed') { clearInterval(ival); document.getElementById('trainProgress').style.display = 'none'; alert('训练完成！'); loadModels(); if (st.result?.importance) drawImportanceChart(Object.keys(st.result.importance), Object.values(st.result.importance)); }
-                else if (st.status === 'failed') { clearInterval(ival); document.getElementById('trainProgress').style.display = 'none'; alert('训练失败：' + st.error); }
-                else { let txt = st.status === 'queued' ? '排队中...' : (st.status === 'loading' ? '加载数据...' : '训练中...'); let bar = document.querySelector('#trainProgress .progress-bar'); if (bar) { bar.style.width = '100%'; bar.innerHTML = txt; } }
+                if (st.status === 'completed') {
+                    clearInterval(ival);
+                    document.getElementById('trainProgress').style.display = 'none';
+                    alert('训练完成！');
+                    loadModels();
+                    // 自动加载所有重要性图表
+                    const currentModel = document.getElementById('modelTypeSelect').value;
+                    if (currentModel) showImportance(currentModel);
+                } else if (st.status === 'failed') {
+                    clearInterval(ival);
+                    document.getElementById('trainProgress').style.display = 'none';
+                    alert('训练失败：' + st.error);
+                } else {
+                    let txt = st.status === 'queued' ? '排队中...' : (st.status === 'loading' ? '加载数据...' : '训练中...');
+                    let bar = document.querySelector('#trainProgress .progress-bar');
+                    if (bar) { bar.style.width = '100%'; bar.innerHTML = txt; }
+                }
             }, 2000);
         } else { alert(r.error || '请求失败'); document.getElementById('trainProgress').style.display = 'none'; }
     } catch(e) { alert('网络错误'); document.getElementById('trainProgress').style.display = 'none'; }
@@ -532,25 +511,14 @@ document.getElementById('trainBtn').onclick = async () => {
 
 /* ========== 清空特征数据 ========== */
 document.getElementById('clearFeaturesBtn').onclick = async function() {
-    if (!confirm('确定清空当前 CTQ 和品项下的所有特征数据吗？\n\n此操作不可恢复！')) {
-        return;
-    }
+    if (!confirm('确定清空当前 CTQ 和品项下的所有特征数据吗？\n\n此操作不可恢复！')) return;
     const url = `/influence/api/clear_features/${ctqId}?product_item=${encodeURIComponent(productItem)}`;
     try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': csrfToken }
-        });
+        const response = await fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrfToken } });
         const result = await response.json();
-        if (result.success) {
-            alert(result.message);
-            loadFeatureList();
-        } else {
-            alert('清空失败：' + (result.error || '未知错误'));
-        }
-    } catch (err) {
-        alert('网络错误：' + err.message);
-    }
+        if (result.success) { alert(result.message); loadFeatureList(); }
+        else { alert('清空失败：' + (result.error || '未知错误')); }
+    } catch (err) { alert('网络错误：' + err.message); }
 };
 
 /* ========== 初始化 ========== */

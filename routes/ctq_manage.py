@@ -4,16 +4,28 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, jsonify
 from models.models import CTQConfig, ProductionData, LossResult
 from models.database import db
-from config import FEATURE_TYPE, FMEA_SEVERITY_K, PRODUCT_ITEMS
+from config import FEATURE_TYPE, FMEA_SEVERITY_K  # PRODUCT_ITEMS 已删除
 from services.excel_service import generate_ctq_template
 from sqlalchemy import func
 from datetime import datetime
 from extensions import cache, clear_all_caches
 import pandas as pd
+import json
+from pathlib import Path
 from io import BytesIO
 from utils import normalize_product_item, to_float_or_zero
 
 ctq_bp = Blueprint('ctq', __name__, url_prefix='/ctq')
+
+
+def load_default_ctqs():
+    """从 JSON 文件加载默认 CTQ 配置"""
+    path = Path(__file__).parent.parent / 'data' / 'default_ctqs.json'
+    if not path.exists():
+        return []
+    with open(path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
 
 def get_feature_type_alias_map():
     return {
@@ -21,6 +33,7 @@ def get_feature_type_alias_map():
         '望小': 'smaller', '望小特性': 'smaller', 'smaller': 'smaller',
         '望大': 'larger', '望大特性': 'larger', 'larger': 'larger',
     }
+
 
 def validate_ctq_params(data):
     ctq_name = data.get('ctq_name', '').strip()
@@ -54,26 +67,33 @@ def validate_ctq_params(data):
         return False, "隐性损失系数不能为负数"
     return True, None
 
+
+def get_all_product_items():
+    """从数据库动态获取所有已使用的品项（CTQ 配置中的非空品项）"""
+    items = db.session.query(CTQConfig.product_item).distinct().filter(CTQConfig.product_item.isnot(None)).all()
+    return sorted([item[0] for item in items])
+
+
 @ctq_bp.route('/')
 def ctq_list():
     ctq_list = CTQConfig.query.order_by(CTQConfig.ctq_id).all()
     enable_count = CTQConfig.query.filter_by(status="启用").count()
     ccp_count = CTQConfig.query.filter_by(is_ccp="是").count()
     high_risk_count = CTQConfig.query.filter(CTQConfig.fmea_severity >= 8).count()
-    all_items = set()
-    for ctq in ctq_list:
-        if ctq.product_item:
-            all_items.add(ctq.product_item)
-    merged_items = sorted(set(PRODUCT_ITEMS) | all_items)
+
+    # 动态获取品项列表（不再使用硬编码 PRODUCT_ITEMS）
+    all_items = get_all_product_items()
+
     return render_template('ctq_manage.html',
                            active_page='ctq',
                            ctq_list=ctq_list,
                            feature_type=FEATURE_TYPE,
                            fmea_config=FMEA_SEVERITY_K,
-                           product_items=merged_items,
+                           product_items=all_items,
                            enable_count=enable_count,
                            ccp_count=ccp_count,
                            high_risk_count=high_risk_count)
+
 
 @ctq_bp.route('/add', methods=['POST'])
 def ctq_add():
@@ -123,6 +143,7 @@ def ctq_add():
         db.session.rollback()
         flash(f'❌ 添加失败：{str(e)}', 'danger')
     return redirect(url_for('ctq.ctq_list'))
+
 
 @ctq_bp.route('/edit/<int:ctq_id>', methods=['POST'])
 def ctq_edit(ctq_id):
@@ -174,7 +195,7 @@ def ctq_edit(ctq_id):
         flash(f'❌ 修改失败：{str(e)}', 'danger')
     return redirect(url_for('ctq.ctq_list'))
 
-# 修改为 POST 方法 (P0 安全修复)
+
 @ctq_bp.route('/delete/<int:ctq_id>', methods=['POST'])
 def ctq_delete(ctq_id):
     try:
@@ -193,47 +214,33 @@ def ctq_delete(ctq_id):
         flash(f'❌ 删除失败：{str(e)}', 'danger')
     return redirect(url_for('ctq.ctq_list'))
 
-# 修改为 POST 方法 (P0 安全修复)
+
 @ctq_bp.route('/reset', methods=['POST'])
 def ctq_reset():
     try:
-        if ProductionData.query.count() > 0 or LossResult.query.count() > 0:
+        # 检查是否存在生产数据，防止误删导致数据污染
+        if ProductionData.query.first():
             flash('❌ 重置失败：请先清空所有生产数据和损失结果后再执行重置操作', 'danger')
             return redirect(url_for('ctq.ctq_list'))
+
         CTQConfig.query.delete()
         db.session.commit()
-        default_ctq = [
-            CTQConfig(ctq_name="蛋白质含量", feature_type="nominal", process_link="原料标准化", is_ccp="是",
-                      fmea_severity=6, gb_code="GB 19302-2010", target_m=3.1, usl=3.5, lsl=2.9, delta0=0.6,
-                      delta=0.2, a0=3000, a=800, hidden_loss_coef=1.2, version=1),
-            CTQConfig(ctq_name="滴定酸度", feature_type="nominal", process_link="发酵环节", is_ccp="是",
-                      fmea_severity=5, gb_code="GB 19302-2010", target_m=75, usl=85, lsl=70, delta0=15,
-                      delta=5, a0=2500, a=600, hidden_loss_coef=1.1, version=1),
-            CTQConfig(ctq_name="灌装净含量", feature_type="nominal", process_link="灌装环节", is_ccp="否",
-                      fmea_severity=4, gb_code="JJF 1070", target_m=200, usl=204.5, lsl=195.5, delta0=9,
-                      delta=4.5, a0=1.2, a=0.3, asymmetric_loss="是", k_upper=0.0037, k_lower=0.0148,
-                      a_upper=0.6, a_lower=1.2, hidden_loss_coef=1.0, version=1),
-            CTQConfig(ctq_name="菌落总数", feature_type="smaller", process_link="成品检验", is_ccp="是",
-                      fmea_severity=10, gb_code="GB 19302-2010", target_m=0, usl=100, lsl=0, delta0=100,
-                      delta=50, a0=50000, a=50000, hidden_loss_coef=5.0, version=1),
-            CTQConfig(ctq_name="乳清析出率", feature_type="smaller", process_link="发酵环节", is_ccp="否",
-                      fmea_severity=6, gb_code="内控标准", target_m=0, usl=5, lsl=0, delta0=5,
-                      delta=2, a0=2500, a=700, hidden_loss_coef=1.3, version=1),
-            CTQConfig(ctq_name="保质期终点活菌数", feature_type="larger", process_link="仓储物流", is_ccp="是",
-                      fmea_severity=8, gb_code="GB 19302-2010", target_m=1e7, usl=1e9, lsl=1e6, delta0=9e6,
-                      delta=5e6, a0=3000, a=0, hidden_loss_coef=1.5, version=1),
-            CTQConfig(ctq_name="冷链运输温度", feature_type="smaller", process_link="仓储物流", is_ccp="是",
-                      fmea_severity=9, gb_code="GB 14881-2013", target_m=2, usl=6, lsl=0, delta0=4,
-                      delta=2, a0=8000, a=1200, hidden_loss_coef=1.8, version=1),
-        ]
-        db.session.add_all(default_ctq)
+
+        default_data = load_default_ctqs()
+        if not default_data:
+            flash('❌ 重置失败：无法加载默认CTQ配置文件', 'danger')
+            return redirect(url_for('ctq.ctq_list'))
+
+        for item in default_data:
+            db.session.add(CTQConfig(**item))
         db.session.commit()
         clear_all_caches()
-        flash('✅ 已重置为默认国标CTQ配置（通用配置）', 'success')
+        flash('✅ 已重置为默认国标CTQ配置（从 JSON 加载）', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'❌ 重置失败：{str(e)}', 'danger')
     return redirect(url_for('ctq.ctq_list'))
+
 
 @ctq_bp.route('/template/download')
 def download_template():
@@ -243,6 +250,7 @@ def download_template():
     except Exception as e:
         flash(f'❌ 模板生成失败：{str(e)}', 'danger')
         return redirect(url_for('ctq.ctq_list'))
+
 
 @ctq_bp.route('/upload', methods=['POST'])
 def upload_ctq():
@@ -324,7 +332,8 @@ def upload_ctq():
                     ctq.k_lower = float(row.get('k_lower', 0)) if pd.notna(row.get('k_lower')) else 0.0
                     ctq.a_upper = a_upper if asymmetric == '是' else 0.0
                     ctq.a_lower = a_lower if asymmetric == '是' else 0.0
-                    ctq.hidden_loss_coef = float(row.get('hidden_loss_coef', 1.0)) if pd.notna(row.get('hidden_loss_coef')) else 1.0
+                    ctq.hidden_loss_coef = float(row.get('hidden_loss_coef', 1.0)) if pd.notna(
+                        row.get('hidden_loss_coef')) else 1.0
                     ctq.status = str(row.get('status', '启用'))
                     ctq.version += 1
                     update_list.append(ctq)
@@ -349,7 +358,8 @@ def upload_ctq():
                         k_lower=float(row.get('k_lower', 0)) if pd.notna(row.get('k_lower')) else 0.0,
                         a_upper=a_upper if asymmetric == '是' else 0.0,
                         a_lower=a_lower if asymmetric == '是' else 0.0,
-                        hidden_loss_coef=float(row.get('hidden_loss_coef', 1.0)) if pd.notna(row.get('hidden_loss_coef')) else 1.0,
+                        hidden_loss_coef=float(row.get('hidden_loss_coef', 1.0)) if pd.notna(
+                            row.get('hidden_loss_coef')) else 1.0,
                         status=str(row.get('status', '启用')),
                         version=1
                     )
@@ -374,6 +384,7 @@ def upload_ctq():
         db.session.rollback()
         flash(f'❌ 文件处理失败：{str(e)}', 'danger')
     return redirect(url_for('ctq.ctq_list'))
+
 
 @ctq_bp.route('/api/<int:ctq_id>')
 def ctq_api(ctq_id):

@@ -2,7 +2,7 @@
 # 生产数据管理模块
 # 包含：列表展示（服务端分页）、模板下载、模拟数据生成、批量导入、手动增删改查、导出、清空
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, jsonify, make_response
 from models.models import ProductionData, CTQConfig, LossResult
 from models.database import db
 from services.excel_service import generate_production_template, generate_mock_production_data, export_excel
@@ -25,9 +25,8 @@ def validate_measured_value(value, ctq, line_num=None):
             return True, warning
     return True, None
 
-# ---------- 页面路由 ----------
+# ---------- 页面路由（移除缓存装饰器，确保实时刷新） ----------
 @production_bp.route('/')
-@cache.cached(timeout=30, key_prefix='production_list_view')
 def data_list():
     total_count = ProductionData.query.count()
     batch_count = ProductionData.query.with_entities(ProductionData.batch_no).distinct().count()
@@ -41,14 +40,20 @@ def data_list():
             'product_item': ctq.product_item or '',
             'ctq_name': ctq.ctq_name,
         })
-    return render_template('production_data.html',
-                           active_page='production',
-                           total_count=total_count,
-                           batch_count=batch_count,
-                           product_line_count=product_line_count,
-                           ctq_count=ctq_count,
-                           ctq_list=ctq_dicts,
-                           today=date.today())
+    # 使用 make_response 包装 render_template 的字符串结果
+    response = make_response(render_template('production_data.html',
+                               active_page='production',
+                               total_count=total_count,
+                               batch_count=batch_count,
+                               product_line_count=product_line_count,
+                               ctq_count=ctq_count,
+                               ctq_list=ctq_dicts,
+                               today=date.today()))
+    # 禁用浏览器缓存，确保导入/删除后页面刷新
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 # ---------- API：服务端分页数据 ----------
 @production_bp.route('/api/data')
@@ -100,12 +105,13 @@ def api_production_data():
             'inspector': item.inspector or '',
             'create_time': item.create_time.isoformat() if item.create_time else '',
         })
+    # 禁用 API 缓存
     return jsonify({
         'draw': draw,
         'recordsTotal': total,
         'recordsFiltered': total,
         'data': data
-    })
+    }), 200, {'Cache-Control': 'no-cache, no-store, must-revalidate'}
 
 # ---------- 模板下载 ----------
 @production_bp.route('/template/download')
@@ -136,7 +142,7 @@ def generate_mock():
                 produce_date = datetime.strptime(produce_date, '%Y-%m-%d').date()
             week = produce_date.isocalendar()[1]
             month = produce_date.month
-            year_month = produce_date.strftime('%Y-%m')  # 新增
+            year_month = produce_date.strftime('%Y-%m')
             new_data = ProductionData(
                 batch_no=row['生产批次号'],
                 produce_date=produce_date,
@@ -363,7 +369,6 @@ def edit_data(data_id):
         item.storage_days = int(form.get('storage_days', 0))
         item.storage_temp = float(form.get('storage_temp', 4))
         item.inspector = form.get('inspector', '').strip()
-        # 重新计算周、月、年月
         item.production_week = produce_date.isocalendar()[1]
         item.production_month = produce_date.month
         item.production_year_month = produce_date.strftime('%Y-%m')
@@ -390,7 +395,6 @@ def delete_data(data_id):
             LossResult.query.filter_by(batch_no=batch_no, ctq_id=ctq_id).delete()
         db.session.commit()
         clear_all_caches()
-        # 判断是否是 AJAX 请求（用于异步删除）
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({"success": True})
         flash("✅ 生产数据删除成功", "success")
@@ -412,8 +416,6 @@ def clear_data():
         ProductionData.query.delete()
         LossResult.query.delete()
         db.session.commit()
-        # ========== 新增下面这一行 ==========
-        cache.delete('production_list_view')  # 删除生产列表页面的缓存
         clear_all_caches()
         flash("✅ 所有生产数据及损失结果已清空", "success")
     except Exception as e:

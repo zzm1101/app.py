@@ -6,7 +6,8 @@ import numpy as np
 from io import BytesIO
 from datetime import datetime, timedelta
 from models.models import CTQConfig
-from config import PRODUCT_ITEMS, FEATURE_TYPE
+from config import FEATURE_TYPE  # PRODUCT_ITEMS 已删除
+
 
 def generate_production_template():
     template_df = pd.DataFrame([
@@ -32,6 +33,7 @@ def generate_production_template():
     output.seek(0)
     return output
 
+
 def generate_ctq_template():
     sample_data = []
     default_ctqs = [
@@ -47,7 +49,10 @@ def generate_ctq_template():
     for ctq in default_ctqs:
         row = {"品项": "", **ctq}
         sample_data.append(row)
-        for item in PRODUCT_ITEMS[:2]:
+        # 不再使用 PRODUCT_ITEMS 硬编码，改为从数据库动态获取品项（但模板仍可提供示例，此处保持示例）
+        # 为了模板的示例性，保留几个常见品项作为演示
+        example_items = ["原味", "草莓"]
+        for item in example_items:
             row_item = {"品项": item, **ctq}
             sample_data.append(row_item)
     df = pd.DataFrame(sample_data)
@@ -63,7 +68,7 @@ def generate_ctq_template():
                 "1. 品项列：留空表示通用配置；填写具体品项名称为专属配置。",
                 "2. 必填字段：ctq_name, feature_type, usl, lsl, target_m",
                 "3. feature_type 必须为：nominal(望目), smaller(望小), larger(望大)",
-                "4. 品项名称请从系统允许列表中选择：" + ", ".join(PRODUCT_ITEMS),
+                "4. 品项名称请从系统允许列表中选择（动态查询）",
                 "5. 上传时将自动覆盖已存在的(品项+CTQ名称)组合。",
                 '6. 非对称损失为"是"时，必须填写 k_upper 和 k_lower。',
                 "7. a_upper 和 a_lower 为非对称损失时的上下限损失金额（元）。"
@@ -73,6 +78,7 @@ def generate_ctq_template():
         df.to_excel(writer, sheet_name="数据模板", index=False)
     output.seek(0)
     return output
+
 
 def generate_mock_production_data():
     np.random.seed(42)
@@ -84,6 +90,7 @@ def generate_mock_production_data():
     for ctq in all_ctq:
         item = ctq.product_item if ctq.product_item else '__global__'
         ctq_map[(item, ctq.ctq_name.strip())] = ctq
+
     def find_ctq(item_name, ctq_name):
         ctq_name = ctq_name.strip()
         if (item_name, ctq_name) in ctq_map:
@@ -91,14 +98,14 @@ def generate_mock_production_data():
         if ('__global__', ctq_name) in ctq_map:
             return ctq_map[('__global__', ctq_name)]
         return None
+
     db_items = CTQConfig.query.with_entities(CTQConfig.product_item).filter(
         CTQConfig.product_item != None,
         CTQConfig.status == "启用"
     ).distinct().all()
     distinct_items = [item[0] for item in db_items if item[0]]
     if not distinct_items:
-        distinct_items = PRODUCT_ITEMS
-    if not distinct_items:
+        # 如果数据库没有任何品项，使用一个占位符（实际生成时用户应确保存在）
         distinct_items = ["示例品项"]
     items = distinct_items
     ctq_names = list(set(ctq.ctq_name for ctq in all_ctq))
@@ -115,7 +122,8 @@ def generate_mock_production_data():
             ctq = find_ctq(product_item, ctq_name)
             if not ctq:
                 continue
-            mean_val, std_val = get_smart_mean_std(ctq)
+            # 动态计算均值和标准差，不再依赖 known_ctqs 硬编码
+            mean_val, std_val = get_dynamic_mean_std(ctq)
             base_measured = np.random.normal(mean_val, std_val)
             if ctq.lsl and ctq.usl:
                 base_measured = np.clip(base_measured, ctq.lsl * 0.9, ctq.usl * 1.1)
@@ -136,7 +144,7 @@ def generate_mock_production_data():
                     "生产线": product_line,
                     "生产班次": work_shift,
                     "品项": product_item,
-                    "样品编号": f"S{batch_no}-{sample_idx+1}",
+                    "样品编号": f"S{batch_no}-{sample_idx + 1}",
                     "CTQ编号": ctq.ctq_id,
                     "CTQ名称": ctq.ctq_name,
                     "实测值": formatted_val,
@@ -147,32 +155,34 @@ def generate_mock_production_data():
                 })
     return pd.DataFrame(batch_list)
 
-def get_smart_mean_std(ctq):
-    known_ctqs = {
-        "蛋白质含量": (3.1, 0.08),
-        "滴定酸度": (75, 1.5),
-        "灌装净含量": (200, 1.2),
-        "菌落总数": (10, 5),
-        "乳清析出率": (2.5, 0.8),
-        "保质期终点活菌数": (5e7, 1e7),
-        "冷链运输温度": (4.5, 1.0),
-    }
-    if ctq.ctq_name in known_ctqs:
-        return known_ctqs[ctq.ctq_name]
+
+def get_dynamic_mean_std(ctq):
+    """
+    根据 CTQ 的规格限和特性类型动态生成合理的均值和标准差。
+    不再使用硬编码的 known_ctqs 字典。
+    """
     usl = ctq.usl
     lsl = ctq.lsl
-    target = ctq.target_m if ctq.target_m and ctq.target_m != 0 else (usl + lsl) / 2
-    if usl and lsl and usl > lsl:
-        std = (usl - lsl) / 10.0
+    target = ctq.target_m if ctq.target_m else (usl + lsl) / 2 if usl and lsl else 0
+
+    if usl and lsl:
+        # 标准差取规格限宽度的 1/8 ~ 1/10
+        std = (usl - lsl) / 10
     else:
         std = 1.0
+
     if ctq.feature_type == "smaller":
+        # 望小特性：均值偏向 LSL（接近 0 或下限）
         mean = lsl + (usl - lsl) * 0.1 if lsl and usl else target
     elif ctq.feature_type == "larger":
+        # 望大特性：均值偏向 USL
         mean = usl - (usl - lsl) * 0.1 if lsl and usl else target
     else:
+        # 望目：均值接近目标值
         mean = target
+
     return mean, std
+
 
 def export_excel(df, sheet_name):
     output = BytesIO()
