@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no, email=no">
+<meta name="oupengmobile" content="portrait">
+<meta name="screen-orientation" content="portrait">
+<meta name="x5-orientation" content="portrait">
+<meta name="x5-fullscreen" content="true">
+<meta name="x5-page-mode" content="app">
+<meta name="apple-touch-fullscreen" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" type="image/x-icon" href="/uploads/favicon.ico">
+<title>伊利官网</title>
+<meta name="keywords" content="伊利，伊利奶粉，伊利牛奶，伊利酸奶，伊利冷饮，伊利集团，伊利股份,伊利官网，伊利官方网站">
+<meta name="description" content="伊利集团稳居全球乳业第一阵营，蝉联亚洲乳业第一。伊利，滋养生命活力！">
+<script defer src="/static/js/optimize.js"></script>
+<link href="/static/css/yili.2ded31f1.css" rel="stylesheet">
+<link href="/static/css/cover.css" rel="stylesheet">
+</head>
+<body>
+<div id="yili">
+<header class="yili-header " data-header="">
+<div class="yili-container">
+<div class="main">
+<a href="/" class="logo">伊利</a>
+<div class="hamburger" data-hamburger="" style="cusor: pointer;">
+<svg viewBox="0 0 19 15">
+<path class="m1" d="M1.5,6.5h16c0.6,0,1,0.4,1,1l0,0c0,0.6-0.4,1-1,1h-16c-0.6,0-1-0.4-1-1l0,0C0.5,6.9,0.9,6.5,1.5,6.5z"></path>
+<path class="m2" d="M1.5,6.5h16c0.6,0,1,0.4,1,1l0,0c0,0.6-0.4,1-1,1h-16c-0.6,0-1-0.4-1-1l0,0C0.5,6.9,0.9,6.5,1.5,6.5z"></path>
+<path d="M1.5,12.5h16c0.6,0,1,0.4,1,1l0,0c0,0.6-0.4,1-1,1h-16c-0.6,0-1-0.4-1-1l0,0C0.5,12.9,0.9,12.5,1.5,12.5z"></path>
+<path d="M1.5,12.5h16c0.6,0,1,0.4,1,1l0,0c0,0.6-0.4,1-1,1h-16c-0.6,0-1-0.4-1-1l0,0C0.5,12.9,0.9,12.5,1.5,12.5z"></path>
+<path d="M1.5,0.5h16c0.6,0,1,0.4,1,1l0,0c0,0.6-0.4,1-1,1h-16c-0.6,0-1-0.4-1-1l0,0C0.5,0.9,0.9,0.5,1.5,0.5z"></path>
+</svg>
+</div>
+</div>
+<div class="aside">
+<a href="/search">
+<icon name="header-search"></icon>
+</a>
+<a target="_blank" href="https://yili.tmall.com">
+<icon name="header-shop"></icon>
+</a>
+<div class="languages">
+<div class="label" data-moup-dropdown="{&quot;target&quot;: &quot;this > .popup&quot;, &quot;className&quot;: &quot;yili-header__language&quot;, &quot;placement&quot;: &quot;bottom&quot;}">
+<span>中文</span>
+<icon name="down"></icon>
+<div class="popup">
+<a href="/en/">English</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div data-nav-wrap="">
+<div class="menu">
+<div class="yili-container" data-nav="">
+<ul class="data">
+<li>
+<a href="/"><span>首页</span></a>
+</li>
+<li>
+<a href="javascript:void(0);"><span>关于我们</span><span>&gt;</span></a>
+<ul>
+<li><a href="/about"><span>走进伊利</span></a></li>
+<li><a href="/about/culture"><span>企业文化</span></a></li>
+<li><a href="/about/chairman"><span>董事长简介</span></a></li>
+<li><a href="/about/center"><span>寻求业务合作</span></a></li>
+<li><a href="/about/sunshine"><span>阳光伊利</span></a></li>
+</ul>
+</li>
+<li>
+<a href="/quality"><span>伊利品质</span></a>
+</li>
+<li>
+<a href="javascript:void(0);"><span>品牌产品</span><span>&gt;</span></a>
+<ul>
+<li>
+<a href="javascript:void(0);"><span>
+液态奶
+</span>
+<span>&gt;</span>
+</a>
+<ul>
+<li><a href="/product/1122"><span>
+安慕希
+</span></a></li>
+<li><a href="/product/1155"><span>
+金典
+</span></a></li>
+<li><a href="/product/1152"><span>
+优酸乳
+</span></a></li>
+<li><a href="/product/1827"><span>
+臻浓
+</span></a></li>
+<li><a href="/product/1828"><span>
+母品牌
+</span></a></li>
+<li><a href="/product/1829"><span>
+QQ星
+</span></a></li>
+<li><a href="/product/1833"><span>
+舒化
+</span></a></li>
+<li><a href="/product/1834"><span>
+谷粒多
+</span></a></li>
+<li><a href="/product/1836"><span>
+植选
+</span></a></li>
+<li><a href="/product/1830"><span>
+味可滋
+</span></a></li>
+<li><a href="/product/1826"><span>
+畅意100%
+</span></a></li>
+<li><a href="/product/4834"><span>
+伊刻活泉
+</span></a></li>
+</ul>
+</li>
+<li>
+<a href="javascript:void(0);"><span>
+奶粉
+</span>
+<span>&gt;</span>
+</a>
+<ul>
+<li><a href="/product/1130"><span>
+金领冠
+</span></a></li>
+<li><a href="/product/1763"><span>
+QQ星
+</span></a></li>
+<li><a href="/product/1764"><span>
+欣活
+</span></a></li>
+<li><a href="/product/1765"><span>
+伊利全家
+</span></a></li>
+<li><a href="/product/1766"><span>
+女士奶粉
+</span></a></li>
+<li><a href="/product/1767"><span>
+学生奶粉
+</span></a></li>
+<li><a href="/product/1768"><span>
+休闲奶粉
+</span></a></li>
+</ul>
+</li>
+<li>
+<a href="javascript:void(0);"><span>
+酸奶
+</span>
+<span>&gt;</span>
+</a>
+<ul>
+<li><a href="/product/1053"><span>
+畅轻
+</span></a></li>
+<li><a href="/product/1760"><span>
+每益添
+</span></a></li>
+<li><a href="/product/1761"><span>
+金典巴氏鲜奶
+</span></a></li>
+<li><a href="/product/1154"><span>
+joyday
+</span></a></li>
+<li><a href="/product/1759"><span>
+大果粒
+</span></a></li>
+<li><a href="/product/1757"><span>
+母品牌鲜奶
+</span></a></li>
+<li><a href="/product/1752"><span>
+母品牌酸奶
+</span></a></li>
+</ul>
+</li>
+<li>
+<a href="javascript:void(0);"><span>
+冷饮
+</span>
+<span>&gt;</span>
+</a>
+<ul>
+<li><a href="/product/1121"><span>
+巧乐兹
+</span></a></li>
+<li><a href="/product/1822"><span>
+甄稀
+</span></a></li>
+<li><a href="/product/1153"><span>
+绮炫
+</span></a></li>
+<li><a href="/product/1824"><span>
+须尽欢
+</span></a></li>
+<li><a href="/product/1823"><span>
+冰工厂
+</span></a></li>
+<li><a href="/product/1831"><span>
+母品牌
+</span></a></li>
+<li><a href="/product/1966"><span>
+Cremo
+</span></a></li>
+<li><a href="/product/1964"><span>
+Joyday
+</span></a></li>
+</ul>
+</li>
+<li>
+<a href="javascript:void(0);"><span>
+奶酪
+</span>
+<span>&gt;</span>
+</a>
+<ul>
+<li><a href="/product/1059"><span>
+儿童奶酪
+</span></a></li>
+<li><a href="/product/1156"><span>
+佐餐奶酪
+</span></a></li>
+<li><a href="/product/1137"><span>
+奶酪零食
+</span></a></li>
+<li><a href="/product/1769"><span>
+伊利专业乳品
+</span></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<a href="/global"><span>全球布局</span></a>
+</li>
+<li>
+<a href="javascript:void(0);"><span>可持续发展</span><span>&gt;</span></a>
+<ul>
+<li><a href="/sustainability"><span>伊利与可持续发展</span></a></li>
+<li>
+<a href="javascript:void(0);"><span>守护绿色家园</span><span>&gt;</span></a>
+<ul>
+<li><a href="/sustainability/climate-action"><span>气候行动</span></a></li>
+<li><a href="/sustainability/water-stewardship"><span>水资源保护</span></a></li>
+<li><a href="/sustainability/circular-economy"><span>循环经济</span></a></li>
+<li><a href="/sustainability/responsible-sourcing"><span>责任采购</span></a></li>
+<li><a href="/sustainability/biodiversity"><span>自然共生</span></a></li>
+</ul>
+</li>
+<li>
+<a href="javascript:void(0);"><span>共富美好生活</span><span>&gt;</span></a>
+<ul>
+<li><a href="/sustainability/employee-care"><span>卓越职场</span></a></li>
+<li><a href="/sustainability/corporate-citizenship"><span>回馈社会</span></a></li>
+</ul>
+</li>
+<li>
+<a href="javascript:void(0);"><span>恪守商业责任</span><span>&gt;</span></a>
+<ul>
+<li><a href="/sustainability/management-structure"><span>ESG管理</span></a></li>
+<li><a href="/sustainability/operation-compliance"><span>合规运营</span></a></li>
+<li><a href="/sustainability/responsible-marketing"><span>责任营销</span></a></li>
+</ul>
+</li>
+<li><a href="/sustainability/reports-publications"><span>工作成果报告</span></a></li>
+<li><a href="/sustainability/sustainability-news"><span>相关新闻动态</span></a></li>
+</ul>
+</li>
+<li>
+<a href="javascript:void(0);"><span>投资者关系</span><span>&gt;</span></a>
+<ul class="middle">
+<li><a href="/investors"><span>公司基本信息</span></a></li>
+<li><a href="/investors/directors"><span>公司治理</span></a></li>
+<li><a href="/investors/service"><span>投资者服务</span></a></li>
+</ul>
+</li>
+<li>
+<a href="/exhibition"><span>展会活动</span></a>
+</li>
+<li>
+<a href="/news"><span>新闻中心</span></a>
+</li>
+<li>
+<a href="/joinus"><span>加入我们</span></a>
+</li>
+</ul>
+<div class="submenu1"></div>
+<div class="submenu2"></div>
+<div class="advertising">
+<div class="inner">
+<img src="">
+</div>
+</div>
+</div>
+</div>
+</div>
+</header>
+<div class="yili-banner__home" data-scroll-section="">
+<div data-swiper="{
+&quot;parallax&quot;: true,
+&quot;autoplay&quot;: {
+&quot;delay&quot;: 6000,
+&quot;disableOnInteraction&quot;: false
+}
+}" data-swiper-video-background="">
+<div class="swiper-wrapper">
+<div class="swiper-slide">
+<div class="image">
+<div class="image pc">
+<img
+class="picture"
+data-swiper-parallax="350"
+src="/uploads/2025-08-14/df8f4078-2708-425f-8197-4f41416864231755143967014.jpg"
+style="object-fit:cover;"
+loading="lazy"
+draggable="false"
+/>
+</div>
+<div class="image m">
+<img
+class="picture"
+data-swiper-parallax="350"
+src="/uploads/2025-07-12/17804e4f-b029-40cf-8e05-376e01c29d8e1752315055323.jpg"
+style="object-fit:cover;"
+loading="lazy"
+draggable="false"
+/>
+</div>
+</div>
+</div>
+<div class="swiper-slide">
+<div class="image">
+<div class="image pc">
+<img
+class="picture"
+data-swiper-parallax="350"
+src="/uploads/2025-08-14/72303c0b-617d-483b-8c47-c133bd98ea131755143972951.jpg"
+style="object-fit:cover;"
+loading="lazy"
+draggable="false"
+/>
+</div>
+<div class="image m">
+<img
+class="picture"
+data-swiper-parallax="350"
+src="/uploads/2025-06-24/4193664e-0235-4fa4-992b-efef576fcb0c1750734831318.jpg"
+style="object-fit:cover;"
+loading="lazy"
+draggable="false"
+/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div data-swiper-pagination=""></div>
+</div>
+<div class="yili-section__about" data-scroll-section="">
+<div class="yili-container">
+<div class="wrap">
+<div class="picture">
+<div class="img img-1" data-scroll="" data-scroll-speed="1.5"
+data-scroll-position="top">
+<div class="inner" data-lazy="/uploads/2023-01-09/48621939-9f1f-4f9c-bb52-d06693f8e7bd1673198765749.png"></div>
+</div>
+<div class="img img-2">
+<div class="inner" data-lazy="/uploads/2023-01-09/c77c33a2-4029-4924-a29c-49adb35fad5d1673198829315.png"></div>
+</div>
+</div>
+<div class="text" data-appear-animation="slide-top" data-appear-animation-repeat="true">
+<h3 class="yili-size__title"
+data-appear-animation-element="">伊利 滋养生命活力</h3>
+<p class="yili-size__text"
+data-appear-animation-element="">伊利位居全球乳业五强<br>连续十二年蝉联亚洲乳业第一<br>中国规模最大、产品品类最全的乳制品企业<br>世界级体育盛会、顶级峰会官方合作伙伴</p>
+<div class="more" data-appear-animation-element="">
+<more href="/about">走进伊利</more>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="yili-section__quality" data-scroll-section="">
+<div class="wrap" data-lazy="/static/images/index_quality_bg.jpeg">
+<div class="yili-container">
+<div class="yili-size__title">伊利品质</div>
+<div class="head" data-appear-animation="slide-top" data-appear-animation-repeat="true">
+<div class="chairman">
+<div class="chairman-infos">
+<div class="slogan"> 伊利视品质如生命，始终为消费者提供品质最优的产品和服务 </div>
+<div class="other">
+<span> ——伊利集团董事长兼总裁 潘刚 </span>
+</div>
+</div>
+</div>
+<div class="more">
+<a href="/quality?hash=hash1124">
+<icon name="hot-milk"></icon>
+<span>伊利品质体验月</span>
+<icon name="arrow-right"></icon>
+</a>
+</div>
+</div>
+<div class="grid" data-appear-animation="slide-top" data-appear-animation-repeat="true">
+<div data-swiper="{
+&quot;slidesPerView&quot;: 2.15,
+&quot;spaceBetween&quot;: 20,
+&quot;breakpoints&quot;: {
+&quot;520&quot;: {
+&quot;slidesPerView&quot;: 2.5,
+&quot;spaceBetween&quot;: 20
+},
+&quot;640&quot;: {
+&quot;slidesPerView&quot;: 3.15,
+&quot;spaceBetween&quot;: 20
+},
+&quot;760&quot;: {
+&quot;slidesPerView&quot;: 3.5,
+&quot;spaceBetween&quot;: 20
+},
+&quot;900&quot;: {
+&quot;slidesPerView&quot;: 4,
+&quot;spaceBetween&quot;: 25
+}
+}
+}">
+<div class="swiper-wrapper">
+<div class="swiper-slide">
+<div data-appear-animation-element="">
+<div class="item">
+<div class="text">
+<div class="yili-size__smalltitle title">奶源</div>
+<div class="yili-size__text intro">
+<p>南北纬45℃黄金奶源带奶源，规模化、集约化养殖奶源供应比例居国内行业首位，各类牧场近1500座</p>
+</div>
+</div>
+<div class="image">
+<div class="inner" data-lazy="/uploads/2023-01-09/62d80dc8-d6da-43cd-aeed-1d17793330841673199391115.png"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="swiper-slide">
+<div data-appear-animation-element="">
+<div class="item">
+<div class="text">
+<div class="yili-size__smalltitle title">品控</div>
+<div class="yili-size__text intro">
+<p>与国际接轨的品质管理标准，聚焦“全球最优品质”的管控体系</p>
+</div>
+</div>
+<div class="image">
+<div class="inner" data-lazy="/uploads/2023-01-09/4d6dcd31-5f6a-423d-9774-41af0d51e15b1673199466318.png"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="swiper-slide">
+<div data-appear-animation-element="">
+<div class="item">
+<div class="text">
+<div class="yili-size__smalltitle title">创新</div>
+<div class="yili-size__text intro">
+<p>业内首创三级研发体系，全球布局七大创新中心，国内外专利授权数量居2021年世界乳业第二</p>
+</div>
+</div>
+<div class="image">
+<div class="inner" data-lazy="/uploads/2023-01-09/9847f9f1-8323-41d4-8fec-7040fc45df5c1673199490838.png"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="swiper-slide">
+<div data-appear-animation-element="">
+<div class="item">
+<div class="text">
+<div class="yili-size__smalltitle title">乳业布局</div>
+<div class="yili-size__text intro">
+<p>打造“互联网+乳业”的新型发展模式以及业务形态</p>
+</div>
+</div>
+<div class="image">
+<div class="inner" data-lazy="/uploads/2023-01-09/8d475bee-4f95-48be-993f-e9b9b10391631673199522664.png"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="yili-section__news" data-scroll-section="">
+<div class="yili-container">
+<div class="head" data-appear-animation="slide-top" data-appear-animation-repeat="true">
+<div class="yili-size__title">新闻中心</div>
+<div>
+<more href="/news">查看更多</more>
+</div>
+</div>
+<div class="main">
+<div class="top" data-appear-animation="slide-top" data-appear-animation-repeat="true">
+<div class="picture" data-scroll="" data-scroll-repeat="">
+<div data-swiper="{
+&quot;speed&quot;: 800,
+&quot;loop&quot;: true,
+&quot;effect&quot;: &quot;creative&quot;,
+&quot;creativeEffect&quot;: {
+&quot;prev&quot;: {
+&quot;shadow&quot;: true,
+&quot;opacity&quot;: 0.5,
+&quot;origin&quot;: &quot;left center&quot;,
+&quot;translate&quot;: [-70, 0, -200]
+},
+&quot;next&quot;: {
+&quot;opacity&quot;: 0.5,
+&quot;origin&quot;: &quot;right center&quot;,
+&quot;translate&quot;: [70, 0, -200]
+},
+&quot;limitProgress&quot;: 2,
+&quot;shadowPerProgress&quot;: false
+}
+}" id="news-1-image" data-swiper-concat="[&quot;news-1-text&quot;]"
+data-swiper-concat-callback="CHANGE_SWIPER">
+<div class="swiper-wrapper">
+<div class="swiper-slide">
+<div class="image"><img src="/uploads/2025-12-24/16ef99f3-9a7b-47a8-8811-6985704e1e811766580274639.jpg">
+</div>
+</div>
+<div class="swiper-slide">
+<div class="image"><img src="/uploads/2025-08-14/cf579dea-746f-429e-ada8-2d635f7408671755145560907.jpg">
+</div>
+</div>
+<div class="swiper-slide">
+<div class="image"><img src="/uploads/2025-08-27/6b801fc2-0840-490f-8d7f-4b09f46439101756278130108.png">
+</div>
+</div>
+</div>
+</div>
+<div data-swiper-pagination=""></div>
+</div>
+<div class="text">
+<div data-swiper="{
+&quot;loop&quot;: true,
+&quot;spaceBetween&quot;: 20
+}" id="news-1-text" data-swiper-concat="[&quot;news-1-image&quot;]"
+data-swiper-concat-callback="CHANGE_SWIPER">
+<div class="swiper-wrapper">
+<div class="swiper-slide">
+<div class="item">
+<div class="time">2025-10-30</div>
+<a href="/news/company/5214"
+class="yili-size__smalltitle title">高频创新持续满足消费者需求 伊利前三季度营收净利双增</a>
+<p class="yili-size__text">伊利股份发布2025年前三季度业绩：报告期，公司实现营业总收入905.64亿元，同比增长1.71%；扣非归母净利润首超百亿，达101.03亿元，同比增长18.73%，公司主营业务韧性向上，势头稳健。</p>
+</div>
+</div>
+<div class="swiper-slide">
+<div class="item">
+<div class="time">2024-10-28</div>
+<a href="/news/company/5077"
+class="yili-size__smalltitle title">李强在内蒙古调研时考察伊利现代智慧健康谷</a>
+<p class="yili-size__text"></p>
+</div>
+</div>
+<div class="swiper-slide">
+<div class="item">
+<div class="time">2025-07-27</div>
+<a href="/news/company/5172"
+class="yili-size__smalltitle title">心怀鸿鹄志，莫负少年时！ 伊利董事长潘刚勉励新员工：在创新中持续进化 在进化中开创新局</a>
+<p class="yili-size__text">为了迎接1000多名从校园走向职场的“新伊代”们，7月26日，伊利集团举办了以“活力向上·给世界力量”为主题的2025新员工入职典礼，伊利集团董事长兼总裁潘刚参加活动，与新员工分享了伊利以消费者为中心，通过不断创新来持续满足消费需求的实践，并勉励新员工保持青年人的蓬勃朝气和昂扬锐气，书写新时代更多精彩。</p>
+</div>
+</div>
+<div class="swiper-slide">
+<div class="item">
+<div class="time">2025-07-14</div>
+<a href="/news/company/5157"
+class="yili-size__smalltitle title">共启新篇，伊利官宣续约国际篮联</a>
+<p class="yili-size__text">7月13日，中国女篮在2025国际篮联女篮亚洲杯迎战印度尼西亚队，凭借出色的团队配合拿下首胜，强势开启亚洲杯征程！首场胜利不仅展现出卫冕冠军的强劲实力，更点燃了全国球迷的观赛热情！比赛中场时刻，伊利集团官宣与国际篮联（FIBA）续约合作，续任国际篮联全球合作伙伴。</p>
+</div>
+</div>
+<div class="swiper-slide">
+<div class="item">
+<div class="time">2023-04-26</div>
+<a href="/news/brand/2036"
+class="yili-size__smalltitle title">携手国际篮联，伊利正式成为2023 FIBA篮球世界杯全球合作伙伴</a>
+<p class="yili-size__text">4月26日，伊利与国际篮联签约仪式在有着“天下第一雄关”美誉的长城-居庸关隆重举行。国际篮联媒体与市场服务总干事Frank Leenders、伊利集团执行总裁刘春喜以及篮球运动员周琦等嘉宾应邀出席，共同见证并宣告伊利成为2023 FIBA 篮球世界杯全球合作伙伴。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="arrows">
+<arrow data-swiper-prev="" type="left"></arrow>
+<arrow data-swiper-next="" type="right"></arrow>
+</div>
+</div>
+</div>
+<div class="items" data-appear-animation="slide-top"
+data-appear-animation-repeat="true">
+<div data-swiper="{
+&quot;slidesPerView&quot;: 2,
+&quot;spaceBetween&quot;: 10,
+&quot;breakpoints&quot;: {
+&quot;580&quot;: {
+&quot;slidesPerView&quot;: 2.5,
+&quot;spaceBetween&quot;: 20
+},
+&quot;790&quot;: {
+&quot;slidesPerView&quot;: 3.5,
+&quot;spaceBetween&quot;: 20
+},
+&quot;960&quot;: {
+&quot;slidesPerView&quot;: 4,
+&quot;spaceBetween&quot;: 20
+}
+}
+}">
+<div class="swiper-wrapper">
+<div class="swiper-slide">
+<a href="/news/company/5222"
+class="card" data-appear-animation-element="">
+<div class="image">
+<div class="inner">
+<img src="/uploads/2025-12-24/b1077b49-ee85-4fc0-9170-6434efc4c2771766566657165.jpg">
+</div>
+</div>
+<div class="text">维护行业健康发展 伊利坚决支持商务部对欧乳制品临时措施</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a href="/news/company/5223"
+class="card" data-appear-animation-element="">
+<div class="image">
+<div class="inner">
+<img src="/uploads/2025-12-24/b4944ae9-33f2-4572-991a-4fd73ad6d7ce1766575907026.jpg">
+</div>
+</div>
+<div class="text">行业唯一！伊利获联合国“链主”认证，以“可持续社会价值生态圈”为全球贡献中国解法</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a href="/news/company/5176"
+class="card" data-appear-animation-element="">
+<div class="image">
+<div class="inner">
+<img src="/uploads/2025-08-28/216918af-3c28-4775-8b9e-f31bae15eb611756371238023.jpg">
+</div>
+</div>
+<div class="text">一枝独秀｜中报业绩大幅领先 从行业引领到定义未来 伊利前瞻战略布局重塑乳业新格局</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a href="/news/company/5175"
+class="card" data-appear-animation-element="">
+<div class="image">
+<div class="inner">
+<img src="/uploads/2025-08-27/a7a35d55-92d0-4fe4-8572-643dceb1c93a1756278684512.jpg">
+</div>
+</div>
+<div class="text">携手海航，共启新程丨伊利集团与海南航空达成战略合作</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a href="/news/company/5174"
+class="card" data-appear-animation-element="">
+<div class="image">
+<div class="inner">
+<img src="/uploads/2025-08-27/e7bb070e-1702-481b-a439-98001a28e4731756278539133.png">
+</div>
+</div>
+<div class="text">品质始终如“伊”，伊利连续六年荣获泰国 FDA 质量奖</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a href="/news/company/5173"
+class="card" data-appear-animation-element="">
+<div class="image">
+<div class="inner">
+<img src="/uploads/2025-11-12/a4093516-dbb4-42fc-ae8e-cf48291d978e1762920415178.jpg">
+</div>
+</div>
+<div class="text">伊利集团党委两支部荣膺内蒙古自治区“坚强堡垒模范支部”称号</div>
+</a>
+</div>
+</div>
+<div class="arrows">
+<arrow data-swiper-prev type="left"></arrow>
+<arrow data-swiper-next type="right"></arrow>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="yili-section__product" data-scroll-section="">
+<div class="yili-container">
+<div class="head" data-appear-animation="slide-top" data-appear-animation-repeat="true">
+<div class="yili-size__title">品牌产品</div>
+</div>
+<div class="main">
+<div class="tabs" data-appear-animation="slide-top" data-appear-animation-repeat="true">
+<div data-swiper="{
+&quot;slidesPerView&quot;: 2.5,
+&quot;breakpoints&quot;: {
+&quot;451&quot;: {
+&quot;slidesPerView&quot;: 3.5
+},
+&quot;591&quot;: {
+&quot;slidesPerView&quot;: 4.5
+},
+&quot;661&quot;: {
+&quot;slidesPerView&quot;: 5.5
+},
+&quot;891&quot;: {
+&quot;slidesPerView&quot;: 5
+}
+}
+}">
+<div class="swiper-wrapper">
+<div class="swiper-slide">
+<div class="tab"
+data-tabs="[&quot;tabs-content-1&quot;, &quot;tab-40&quot;]">
+<span> 液态奶 <icon name="arrow-right"></icon>
+</span>
+</div>
+</div>
+<div class="swiper-slide">
+<div class="tab"
+data-tabs="[&quot;tabs-content-1&quot;, &quot;tab-41&quot;]">
+<span> 奶粉 <icon name="arrow-right"></icon>
+</span>
+</div>
+</div>
+<div class="swiper-slide">
+<div class="tab"
+data-tabs="[&quot;tabs-content-1&quot;, &quot;tab-45&quot;]">
+<span> 酸奶 <icon name="arrow-right"></icon>
+</span>
+</div>
+</div>
+<div class="swiper-slide">
+<div class="tab"
+data-tabs="[&quot;tabs-content-1&quot;, &quot;tab-42&quot;]">
+<span> 冷饮 <icon name="arrow-right"></icon>
+</span>
+</div>
+</div>
+<div class="swiper-slide">
+<div class="tab"
+data-tabs="[&quot;tabs-content-1&quot;, &quot;tab-43&quot;]">
+<span> 奶酪 <icon name="arrow-right"></icon>
+</span>
+</div>
+</div>
+</div>
+</div>
+<div data-swiper-prev=""></div>
+<div data-swiper-next=""></div>
+</div>
+<div class="tabs-content"
+data-tabs-content="[&quot;tabs-content-1&quot;, &quot;tab-40&quot;]">
+<div class="wrap">
+<div class="text" data-appear-animation="slide-top"
+data-appear-animation-repeat="true">
+<div data-appear-animation-element=""
+class="row">伊利不仅是</div>
+<div data-appear-animation-element=""
+class="row strong">健康食品的提供者</div>
+<div data-appear-animation-element=""
+class="row">同时也是</div>
+<div data-appear-animation-element=""
+class="row strong">健康生活方式的倡导者</div>
+</div>
+<div class="images">
+<div class="logos" data-appear-animation="zoom-out"
+data-appear-animation-repeat="true">
+<a href="/product/1122" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-12/578424ab-30fb-444d-820a-1807043c42671673512603735.png"></a>
+<a href="/product/1155" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-09/21187a79-a1d6-418a-b041-3494a666d6ad1673203624734.png"></a>
+<a href="/product/1152" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2024-03-10/b53598c3-0f45-4e62-8722-4afd0c7f9b351710054786896.png"></a>
+<a href="/product/1827" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2024-03-10/dd361e52-37c0-41f1-abe8-ba1ad5fd65081710058905520.png"></a>
+<a href="/product/1828" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-12/970365c3-29a2-4f8e-99fb-4c5eb96395781673503374290.png"></a>
+<a href="/product/1829" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-12/51f60f07-b9a7-4a73-aff4-7fe8ea74aef91673503572183.png"></a>
+<a href="/product/1833" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-12/567db102-8f7a-4c49-8cc7-da0569c84fa71673506327160.png"></a>
+<a href="/product/1834" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2024-03-09/3cc58f74-56e1-4a6f-9498-2264e3e6ec191709979865227.png"></a>
+<a href="/product/1836" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-12/16bd654c-604d-4124-ad0e-7fe3103667211673508362604.png"></a>
+<a href="/product/1830" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-12/96723fcf-96ba-4897-a4cf-bf135bf276f81673503835055.png"></a>
+<a href="/product/1826" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2024-03-07/2535fba8-9135-428d-864f-d94db64c20f61709804043307.png"></a>
+<a href="/product/4834" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2024-03-10/e8d17fa1-68fd-4c4a-bbf7-4204932616761710053534543.png"></a>
+</div>
+</div>
+</div>
+</div>
+<div class="tabs-content"
+data-tabs-content="[&quot;tabs-content-1&quot;, &quot;tab-41&quot;]">
+<div class="wrap">
+<div class="text" data-appear-animation="slide-top"
+data-appear-animation-repeat="true">
+<div data-appear-animation-element=""
+class="row">伊利不仅是</div>
+<div data-appear-animation-element=""
+class="row strong">健康食品的提供者</div>
+<div data-appear-animation-element=""
+class="row">同时也是</div>
+<div data-appear-animation-element=""
+class="row strong">健康生活方式的倡导者</div>
+</div>
+<div class="images">
+<div class="logos" data-appear-animation="zoom-out"
+data-appear-animation-repeat="true">
+<a href="/product/1130" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-16/f21dbc93-b17e-4804-8ce8-0b71b74136241673853679201.png"></a>
+<a href="/product/1763" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-11/8c23d2d8-86b4-4c9b-bfae-571607d2b3ee1673416737412.png"></a>
+<a href="/product/1764" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-16/0977bc1f-dbbd-4ef2-b664-4b48fab8e06c1673852460726.png"></a>
+<a href="/product/1765" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-19/4efe32dc-8b24-4427-8519-2d5968d23e171674120548445.png"></a>
+<a href="/product/1766" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-19/10867600-d385-49fe-b5e1-f4f6bf53f7c01674120798700.png"></a>
+<a href="/product/1767" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-19/ed9125ea-62f3-47ac-a6fe-eec58724f3a11674120827838.png"></a>
+<a href="/product/1768" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-31/f98c07bc-0b80-4f90-bc5c-9af4e91dd3b11675130191733.png"></a>
+</div>
+</div>
+</div>
+</div>
+<div class="tabs-content"
+data-tabs-content="[&quot;tabs-content-1&quot;, &quot;tab-45&quot;]">
+<div class="wrap">
+<div class="text" data-appear-animation="slide-top"
+data-appear-animation-repeat="true">
+<div data-appear-animation-element=""
+class="row">伊利不仅是</div>
+<div data-appear-animation-element=""
+class="row strong">健康食品的提供者</div>
+<div data-appear-animation-element=""
+class="row">同时也是</div>
+<div data-appear-animation-element=""
+class="row strong">健康生活方式的倡导者</div>
+</div>
+<div class="images">
+<div class="logos" data-appear-animation="zoom-out"
+data-appear-animation-repeat="true">
+<a href="/product/1053" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-08/edf1e24a-ef30-42dc-8a84-373a95fc40e71673157264415.png"></a>
+<a href="/product/1760" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-10/0219e142-54b9-4954-9a25-7b11d1b506cd1673348998425.png"></a>
+<a href="/product/1761" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-10/e5fcc869-fed4-4307-a141-c7e957a51e591673351751793.png"></a>
+<a href="/product/1154" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-09/335c39e0-cc4f-443b-813e-cf16413f08f01673201837608.png"></a>
+<a href="/product/1759" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-19/820d7d90-5445-42c2-a4bf-68910a0bf6fa1674120952384.png"></a>
+<a href="/product/1757" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-19/e4ab819e-ee18-4c23-8f84-49b306149bf51674120981595.png"></a>
+<a href="/product/1752" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-19/1f94a747-dc66-4e06-a6eb-3a701ac1ef321674121027049.png"></a>
+</div>
+</div>
+</div>
+</div>
+<div class="tabs-content"
+data-tabs-content="[&quot;tabs-content-1&quot;, &quot;tab-42&quot;]">
+<div class="wrap">
+<div class="text" data-appear-animation="slide-top"
+data-appear-animation-repeat="true">
+<div data-appear-animation-element=""
+class="row">伊利不仅是</div>
+<div data-appear-animation-element=""
+class="row strong">健康食品的提供者</div>
+<div data-appear-animation-element=""
+class="row">同时也是</div>
+<div data-appear-animation-element=""
+class="row strong">健康生活方式的倡导者</div>
+</div>
+<div class="images">
+<div class="logos" data-appear-animation="zoom-out"
+data-appear-animation-repeat="true">
+<a href="/product/1121" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-08/be500df0-8baa-4aed-b871-cafa1437124b1673182746082.png"></a>
+<a href="/product/1822" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-12/9769ad61-0a83-43c2-aa65-0d7e47a725e41673501383273.png"></a>
+<a href="/product/1153" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2025-01-02/4fcfb1ab-028b-4af6-8f39-e62f6878ae651735755624222.png"></a>
+<a href="/product/1824" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2025-01-02/022db251-436b-4d0a-98c5-9039c1d45f741735757294018.png"></a>
+<a href="/product/1823" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-02-16/adc62a6d-06c9-48cd-97b5-7d64f3a530fc1676534337414.png"></a>
+<a href="/product/1831" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2025-01-02/6df16dea-7ca1-48a4-8425-55c2df8801481735752510894.png"></a>
+<a href="/product/1966" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2025-06-23/7eb6309f-2a00-4e64-8a1e-d836cdca330e1750693721400.png"></a>
+<a href="/product/1964" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-03-23/9867197d-26a3-49b9-af95-8312a9ab51bc1679563383775.png"></a>
+</div>
+</div>
+</div>
+</div>
+<div class="tabs-content"
+data-tabs-content="[&quot;tabs-content-1&quot;, &quot;tab-43&quot;]">
+<div class="wrap">
+<div class="text" data-appear-animation="slide-top"
+data-appear-animation-repeat="true">
+<div data-appear-animation-element=""
+class="row">伊利不仅是</div>
+<div data-appear-animation-element=""
+class="row strong">健康食品的提供者</div>
+<div data-appear-animation-element=""
+class="row">同时也是</div>
+<div data-appear-animation-element=""
+class="row strong">健康生活方式的倡导者</div>
+</div>
+<div class="images">
+<div class="logos" data-appear-animation="zoom-out"
+data-appear-animation-repeat="true">
+<a href="/product/1059" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-19/88aef13c-a771-4ccb-a298-e7daf3698a971674121144288.png"></a>
+<a href="/product/1156" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2023-01-19/290a8029-7638-4109-aa59-1f634125215d1674121185429.png"></a>
+<a href="/product/1137" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2024-04-23/11276361-1660-444b-abac-3c571e119de21713812393251.png"></a>
+<a href="/product/1769" class="logo"
+data-appear-animation-element=""><img
+data-lazy="/uploads/2025-01-02/f8bd5ef6-35c2-4e12-bd9e-e5df7f88012b1735747688247.png"></a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="yili-section__global" data-scroll-section="">
+<div class="yili-container">
+<div class="head" data-appear-animation="slide-top" data-appear-animation-repeat="true">
+<div>
+<div class="yili-size__title">伊利全球布局</div>
+<div class="yili-size__text">伊利的合作伙伴遍布6大洲39个国家2000多家企业，旗下众多产品在全球60多个国家和地区上市，全球拥有15个研发创新中心</div>
+</div>
+<div>
+<more href="/global">查看更多</more>
+</div>
+</div>
+<div class="map">
+<div class="map-inner">
+<global @change="call('CHANGE_GLOBAL', $event)" current="亚洲"></global>
+<div style="display: none;">
+<div data-global="亚洲">
+<div class="swiper-slide">
+<a href="/global/asia/1159" class="item"
+data-appear-animation-element="">
+<div class="image">
+<div class="inner"><img
+data-lazy="/uploads/2023-01-09/9fbf6a6b-87e8-4bc4-a427-c96e2f19473f1673218594282.jpg">
+</div>
+<div class="tag">伊利在亚洲</div>
+</div>
+<div class="text yili-size__text">伊利再度荣膺泰国“劳动关系与福利杰出单位”</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a href="/global/asia/1158" class="item"
+data-appear-animation-element="">
+<div class="image">
+<div class="inner"><img
+data-lazy="/uploads/2023-01-09/c643b205-cc94-4043-ba44-a850f2f63a8a1673218324241.jpg">
+</div>
+<div class="tag">伊利在亚洲</div>
+</div>
+<div class="text yili-size__text">伊利印尼乳业生产基地投产 刷新中国乳业在东南亚投资纪录</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a href="/global/asia/1157" class="item"
+data-appear-animation-element="">
+<div class="image">
+<div class="inner"><img
+data-lazy="/uploads/2023-01-09/0fe31268-9d9a-4a09-be86-12374168ec0e1673218126358.jpg">
+</div>
+<div class="tag">伊利在亚洲</div>
+</div>
+<div class="text yili-size__text">面积120平方公里，世界乳业硅谷！伊利现代智慧健康谷投产在即，邀您开启沉浸式探秘之旅</div>
+</a>
+</div>
+</div>
+<div data-global="欧洲">
+<div class="swiper-slide">
+<a href="/global/europe/1758" class="item"
+data-appear-animation-element="">
+<div class="image">
+<div class="inner"><img
+data-lazy="/uploads/2023-01-10/a4acf750-4cff-45ab-9553-537c936b6f461673348418681.jpg">
+</div>
+<div class="tag">伊利在欧洲</div>
+</div>
+<div class="text yili-size__text">世界乳品创新奖揭晓 伊利包揽六项大奖蝉联全球乳业第一</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a href="/global/europe/1178" class="item"
+data-appear-animation-element="">
+<div class="image">
+<div class="inner"><img
+data-lazy="/uploads/2023-02-06/f0dda850-41ac-4add-b46a-4da48dae0df01675661484252.png">
+</div>
+<div class="tag">伊利在欧洲</div>
+</div>
+<div class="text yili-size__text">伊利携手荷兰StartLife、英国剑桥大学开放创新论坛 持续拓展全球健康生态圈</div>
+</a>
+</div>
+</div>
+<div data-global="北美洲">
+<div class="swiper-slide">
+<a href="/global/north-america/1177" class="item"
+data-appear-animation-element="">
+<div class="image">
+<div class="inner"><img
+data-lazy="/uploads/2023-02-06/68745f0d-4d33-4ed2-8dc8-945a11dbc3051675669497687.png">
+</div>
+<div class="tag">伊利在北美洲</div>
+</div>
+<div class="text yili-size__text">习近平出席企业家座谈会 伊利主导中美食品智慧谷启航</div>
+</a>
+</div>
+</div>
+<div data-global="大洋洲">
+<div class="swiper-slide">
+<a href="/global/oceania/1169" class="item"
+data-appear-animation-element="">
+<div class="image">
+<div class="inner"><img
+data-lazy="/uploads/2023-01-20/a238062b-02e0-45e0-be68-cb223dffcb3a1674187184203.png">
+</div>
+<div class="tag">伊利在大洋洲</div>
+</div>
+<div class="text yili-size__text">海外大奖首设伊利创新奖 “全面价值领先”引发热议</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a href="/global/oceania/1167" class="item"
+data-appear-animation-element="">
+<div class="image">
+<div class="inner"><img
+data-lazy="/uploads/2023-01-09/1dccbfb9-3ca5-4683-9223-cdedaec720971673216894372.jpg">
+</div>
+<div class="tag">伊利在大洋洲</div>
+</div>
+<div class="text yili-size__text">伊利成功收购新西兰第二大乳业合作社Westland 开启“让世界共享健康”的新格局</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a href="/global/oceania/1166" class="item"
+data-appear-animation-element="">
+<div class="image">
+<div class="inner"><img
+data-lazy="/uploads/2023-01-09/cd1df656-439c-4bde-9fa9-5ffbbef1eecd1673216640026.jpg">
+</div>
+<div class="tag">伊利在大洋洲</div>
+</div>
+<div class="text yili-size__text">伊利新西兰黄油新产线投产 为中国乳企海外最大黄油工厂</div>
+</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="yili-section__global-swiper" data-scroll-section="">
+<div class="yili-container" data-appear-animation="slide-top" data-appear-animation-repeat="true">
+<div id="SWIPER_GLOBAL" data-swiper="{
+&quot;slidesPerView&quot;: 1.5,
+&quot;spaceBetween&quot;: 20,
+&quot;centerInsufficientSlides&quot;: true,
+&quot;breakpoints&quot;: {
+&quot;520&quot;: {
+&quot;slidesPerView&quot;: 2.25,
+&quot;spaceBetween&quot;: 20
+},
+&quot;800&quot;: {
+&quot;slidesPerView&quot;: 3,
+&quot;spaceBetween&quot;: 20
+},
+&quot;940&quot;: {
+&quot;slidesPerView&quot;: 3,
+&quot;spaceBetween&quot;: 20
+}
+}
+}">
+<div class="swiper-wrapper"></div>
+</div>
+</div>
+</div>
+<div class="yili-section__sustainable" data-scroll-section="">
+<div class="wrap" data-lazy="/uploads/data/bg_2.png">
+<div class="yili-container">
+<div class="head" data-appear-animation="slide-top" data-appear-animation-repeat="true">
+<div>
+<div class="yili-size__title">可持续发展</div>
+<div class="yili-size__text">从“责任的力量”到“‘WISH 2030’金钥匙可持续发展体系”，时刻展现伊利坚持“让世界共享健康”的宏伟目标</div>
+</div>
+<div>
+<more href="/sustainable">查看更多</more>
+</div>
+</div>
+<div class="tabs" data-appear-animation="slide-top" data-appear-animation-repeat="true">
+<div class="tab active">
+<span class="en">Win-Win</span>
+<span class="cn"> 产业链共赢 </span>
+</div>
+<div class="tab">
+<span class="en">Innovation</span>
+<span class="cn"> 质量与创新 </span>
+</div>
+<div class="tab">
+<span class="en">Social</span>
+<span class="cn"> 社会公益 </span>
+</div>
+<div class="tab">
+<span class="en">Health</span>
+<span class="cn"> 营养与健康 </span>
+</div>
+</div>
+<div class="main" data-appear-animation="slide-top" data-appear-animation-repeat="true">
+<div class="picture">
+<img src="/static/images/wish.jpeg">
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="yili-section__cooperate" data-scroll-section="">
+<div class="yili-container">
+<div class="yili-size__title"
+>全球战略合作</div>
+<div class="top" >
+<div class="swiper" data-swiper="{
+&quot;autoplay&quot;: true
+}">
+<div class="swiper-wrapper">
+<div class="swiper-slide">
+<a class="item" href="/news/brand/1915">
+<img src="/uploads/2024-02-26/thumbnail.3ab2ca73-4e9f-4dfe-a3d0-83d90c78e6861708935479332.jpg">
+</a>
+</div>
+<div class="swiper-slide">
+<a class="item" href="/news/brand/82">
+<img src="/uploads/2025-08-14/333a715b-4a8b-4c70-9246-e5075309b9e01755145322178.jpg">
+</a>
+</div>
+<div class="swiper-slide">
+<a class="item" href="/news/brand/1916">
+<img src="/uploads/2025-08-14/bf91af5a-8c5d-41e5-85a1-04c0614b40431755145384385.jpg">
+</a>
+</div>
+<div class="swiper-slide">
+<a class="item" href="/news/company/179">
+<img src="/uploads/2025-08-14/66f75a7e-f1f8-49d9-9e21-6035543f678a1755145350275.jpg">
+</a>
+</div>
+</div>
+</div>
+<div data-swiper-pagination=""></div>
+</div>
+<div class="list">
+<div class="swiper" data-swiper="{
+&quot;autoplay&quot;: true,
+&quot;slidesPerView&quot;: 2.15,
+&quot;spaceBetween&quot;: 10,
+&quot;breakpoints&quot;: {
+&quot;500&quot;: {
+&quot;slidesPerView&quot;: 2.5,
+&quot;spaceBetween&quot;: 10
+},
+&quot;620&quot;: {
+&quot;slidesPerView&quot;: 3,
+&quot;spaceBetween&quot;: 20
+}
+}
+}">
+<div class="swiper-wrapper">
+<div class="swiper-slide">
+<a class="item">
+<div class="image">
+<div class="inner"><img src="/uploads/2025-09-10/6ff044ce-888d-4203-a467-36446246e4a21757436700172.jpg">
+</div>
+</div>
+<div class="text yili-size__text">娟姗好奶 礼遇卢浮</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a class="item">
+<div class="image">
+<div class="inner"><img src="/uploads/2025-09-10/8f385fdd-1239-41d3-8799-5a5173fb123d1757436592375.jpg">
+</div>
+</div>
+<div class="text yili-size__text">大英博物馆的新伙伴</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a class="item">
+<div class="image">
+<div class="inner"><img src="/uploads/2025-09-10/8cc2880f-129f-49c2-9bcc-9604b7fdc4591757436569912.jpg">
+</div>
+</div>
+<div class="text yili-size__text">无界新国风 有机新国潮</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a class="item">
+<div class="image">
+<div class="inner"><img src="/uploads/2025-09-10/dcb374f5-6708-4f6f-b9d0-9ae2934490541757437971372.jpg">
+</div>
+</div>
+<div class="text yili-size__text">CHINA瓷 中国礼</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a class="item">
+<div class="image">
+<div class="inner"><img src="/uploads/2025-09-10/f2cc8e61-a585-43f4-ad86-fff6229edaf01757436525433.jpg">
+</div>
+</div>
+<div class="text yili-size__text">法国网球公开赛罗兰·加洛斯中国区官方乳制品合作伙伴</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a class="item">
+<div class="image">
+<div class="inner"><img src="/uploads/2025-09-10/87a1aad6-06e3-4bdb-acdd-178df9ab74ec1757436453090.jpg">
+</div>
+</div>
+<div class="text yili-size__text">踏上红土 共赴巴黎</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a class="item">
+<div class="image">
+<div class="inner"><img src="/uploads/2025-09-10/c6da3a48-6924-4560-8861-e2f91fbc45d51757436400196.jpg">
+</div>
+</div>
+<div class="text yili-size__text">有机生活 礼致最爱</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a class="item">
+<div class="image">
+<div class="inner"><img src="/uploads/2025-09-10/eeff88c6-ad49-4bbf-8535-5271a5651e101757436385843.jpg">
+</div>
+</div>
+<div class="text yili-size__text">有机生活 礼致最爱</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a class="item">
+<div class="image">
+<div class="inner"><img src="/uploads/2025-09-10/9ac694d7-bfd7-4325-9873-87bb3a89a2b01757436359042.jpg">
+</div>
+</div>
+<div class="text yili-size__text">有机生活 礼致最爱</div>
+</a>
+</div>
+<div class="swiper-slide">
+<a class="item">
+<div class="image">
+<div class="inner"><img src="/uploads/2025-09-10/c5f5776a-ab84-4d1f-9087-690c7d661ca11757436267209.jpg">
+</div>
+</div>
+<div class="text yili-size__text">金典-博鳌亚洲论坛2025年年会唯一指定有机牛奶&amp;#xb;</div>
+</a>
+</div>
+</div>
+</div>
+<arrow data-swiper-prev="" type="left"></arrow>
+<arrow data-swiper-next="" type="right"></arrow>
+</div>
+</div>
+</div>
+<footer class="yili-footer" data-scroll-section="">
+<div class="yili-footer__top"></div>
+<div class="yili-footer__wrapper">
+<div class="yili-container">
+<div class="wrap">
+<div class="main" data-appear-animation="slide-top">
+<div class="row">
+<div class="logo" data-appear-animation-element=""></div>
+<div class="telephone" data-appear-animation-element="">
+<span>全国统一服务热线</span>
+<strong>400-816-9999</strong>
+</div>
+<div class="telephone" data-appear-animation-element="">
+<span>奶粉事业部服务热线</span>
+<strong>400-800-1111</strong>
+</div>
+</div>
+</div>
+<div class="aside">
+<div class="icons" data-appear-animation="slide-top">
+<div class="icon" data-moup-dropdown='{"image": "/uploads/2025-06-05/b08d67f0-3c68-4195-be95-1ebd3d9844841749091839684.jpg", "className": "cat-quick__code", "placement": "bottom"}' data-appear-animation-element=""><img data-hover="/uploads/2023-01-08/606628b0-8960-465a-b0b5-5303bfa6bc4a1673143904878.png" src="/uploads/2023-01-08/98e7d3d8-35db-4e36-876f-195414372ad41673143908350.png" alt="微信"></div>
+<div class="icon" data-moup-dropdown='{"image": "/uploads/2023-01-17/46fbddc7-f82a-4223-8f6c-d4910278106e1673950239300.png", "className": "cat-quick__code", "placement": "bottom"}' data-appear-animation-element=""><img data-hover="/uploads/2023-01-08/89dcf3e1-f856-4143-af2f-0db6e10da8121673143915216.png" src="/uploads/2023-01-08/e186e12d-7260-4fce-aadd-f65f1bce5a9e1673143918128.png" alt="视频号"></div>
+<div class="icon" data-moup-dropdown='{"image": "/uploads/2023-01-12/8af707d8-950d-49c9-98b2-3939be72c9691673511280902.png", "className": "cat-quick__code", "placement": "bottom"}' data-appear-animation-element=""><img data-hover="/uploads/2023-01-08/ae693ae8-d48e-474c-9a25-ce28470d025d1673143924027.png" src="/uploads/2023-01-08/96a09ebd-391c-465f-91c7-e843b68c45d71673143927204.png" alt="微博"></div>
+<div class="icon" data-moup-dropdown='{"image": "/uploads/2023-01-12/96e343cc-361f-48c1-ba66-880dd9f968211673512294269.png", "className": "cat-quick__code", "placement": "bottom"}' data-appear-animation-element=""><img data-hover="/uploads/2023-01-08/01a0542a-2ee5-4544-a551-088caef3ae911673143933163.png" src="/uploads/2023-01-08/d789b896-8cc5-404a-b6a6-6cbdd598802f1673143935932.png" alt="抖音"></div>
+<div class="icon" data-moup-dropdown='{"image": "/uploads/2023-01-12/b6904811-2c14-4229-be3a-68fb700c2e0c1673512302076.png", "className": "cat-quick__code", "placement": "bottom"}' data-appear-animation-element=""><img data-hover="/uploads/2023-01-08/cd406845-c3f8-4926-8b0c-f5bf69c6d16d1673143942684.png" src="/uploads/2023-01-08/affa86eb-4947-4cee-a355-ef48107745f81673143946241.png" alt="小红书"></div>
+<div class="icon" data-moup-dropdown='{"image": "/uploads/2023-01-12/5cab0627-2df2-4c88-84c6-dd2355e2897f1673512310077.png", "className": "cat-quick__code", "placement": "bottom"}' data-appear-animation-element=""><img data-hover="/uploads/2023-01-08/6d8b70ab-8725-43ed-b746-1a56f89ffdd71673143951699.png" src="/uploads/2023-01-08/dfd655c2-9016-41d1-a19f-aa4bf9497d861673143956487.png" alt="bilibili"></div>
+</div>
+</div>
+</div>
+<div class="bottom" data-appear-animation="slide-top">
+<div class="cell"><a href="/pages/privacy">隐私声明</a></div>
+<div class="cell">© 2010 YILI.COM INC. ALLRIGHTS RESERVED. 内蒙古伊利实业集团股份有限公司版权所有</div>
+<div class="cell"><a href="https://beian.miit.gov.cn/" target="_blank">蒙ICP备09003253号-2</a></div>
+<div class="cell"><a href="https://beian.mps.gov.cn/#/query/webSearch?code=15019002000001" target="_blank">蒙公网安备15019002000001号</a></div>
+</div>
+</div>
+</div>
+</footer>
+<div class="yili-quick">
+<div class="inner">
+<div class="icon" onclick="ut_popup_chat_win(1);">
+<svg viewBox="0 0 199 213">
+<path d="M42.52,202.26V202H76.88v.26c.06,0,.1,0,.16,0A5.4,5.4,0,0,1,77,213H42.68a5.44,5.44,0,0,1-.18-10.74ZM23,212.64c.13,0,.23-.26.36-.28C25.44,212.64,25.78,212.64,23,212.64Zm73.59-.33c.15,0,.26.38.41.38-14.69,0-11.79-.17-.38-.38ZM33.68,133.2c.13-.19,1.54-1.45,3.11-2.81,0,0,.05.06.08.1a6.16,6.16,0,0,1,3.31-1.32,7.75,7.75,0,0,1,4.34,2C57.66,149.37,78,160.05,99.57,160s41.88-10.77,55-29.05l.13.06a4.94,4.94,0,0,1,7.19-.85,0,0,0,0,1,0,0c.6.27,3.41,3.19,3.4,3,21.43,20.08,33.7,49,33.7,79.44,0,0-75.44.21-102.1.33a5.28,5.28,0,0,1,.23-10.5v-.26h91.39a97.56,97.56,0,0,0-29.32-60.61c-15,18.43-36.81,29-59.71,29s-44.68-10.59-59.7-29a97.49,97.49,0,0,0-29.33,60.61H22.9v.23c-2-.32-3.13.17,0,.06v-.06A5.4,5.4,0,0,1,28,207.76,5.17,5.17,0,0,1,23.35,213C18.2,212.88,0,212.65,0,212.65,0,182.23,12.26,153.29,33.68,133.2ZM46.73,37a76.87,76.87,0,0,0-15,32.39h-.32c.1.06.17.17.27.24a79.14,79.14,0,0,0,1.28,37A11.88,11.88,0,0,1,25,110C16.69,110,10,100.43,10,88.62c0-10.29,5.09-18.87,11.86-20.91A87.9,87.9,0,0,1,39.18,30.06,4.82,4.82,0,0,1,43,28a5,5,0,0,1,4.57,3.18,5.62,5.62,0,0,1-.93,5.76ZM98,124c22.09,0,40-19,40-42.5S120.09,39,98,39,58,58,58,81.5a43.85,43.85,0,0,0,11.72,30.05A38.83,38.83,0,0,0,98,124Zm0-96c27.61,0,50,23.73,50,53s-22.39,53-50,53S48,110.27,48,81,70.39,28,98,28Zm76,82a11.85,11.85,0,0,1-7.76-3.2,79.39,79.39,0,0,0,1.28-37.34l0,0h0c-4.91-24.08-20.6-44-41.92-53.27a65.71,65.71,0,0,0-64.68,7A3.48,3.48,0,0,1,58,24.21a4.82,4.82,0,0,1-3.52-1.57A5.51,5.51,0,0,1,53,18.87a5.39,5.39,0,0,1,2.13-4.28l-.07-.11a75.13,75.13,0,0,1,74.43-8.17C154,17,172,40.09,177.43,67.88,185,71.5,189.57,79.8,188.94,88.62,188.94,100.42,182.25,110,174,110Z"></path>
+</svg>
+</div>
+<div class="icon" data-moup-dropdown="{&quot;target&quot;: &quot;this > .popup&quot;, &quot;className&quot;: &quot;yili-quick__tel&quot;, &quot;placement&quot;: &quot;left&quot;}">
+<svg viewBox="0 0 74.47 74.39">
+<path d="M62.68,50.7c-3.44-2.77-6.52-4.11-9.41-4.11-4.24,0-7,2.8-9.44,5.27l-.78.66c-.74,0-3.82-.64-12.15-9-9.71-9.71-9-12.26-9-12.27l.67-.66c3.84-3.78,9.09-9,1.16-18.84C21,8.37,17.91,6.64,14.49,6.64c-5.43,0-9.85,4.42-12.22,6.79-7,7,3.25,27.78,17.12,41.65C32.73,68.42,46.67,74.39,54.56,74.39c2.84,0,5-.74,6.48-2.19,2.3-2.3,7.08-7.08,6.77-12.76-.17-3.2-1.9-6.15-5.13-8.74M57.61,68.77c-.24.23-1,.77-3,.77-6.67,0-19.45-5.6-31.74-17.89C6.67,35.5,3,19.56,5.7,16.86c1.74-1.74,5.36-5.37,8.79-5.37,1.9,0,3.7,1.09,5.5,3.34,5.18,6.46,2.94,8.67-.78,12.35l-.7.68a4.91,4.91,0,0,0-1.42,3.56c0,2.23,1.07,6.26,10.39,15.57S40.83,57.37,43.05,57.37h0A4.9,4.9,0,0,0,46.6,56l.69-.69c2-2,3.77-3.82,6-3.82,1.72,0,3.86,1,6.37,3,2.14,1.72,3.23,3.43,3.33,5.23C63.16,63.22,59.41,67,57.61,68.77Zm5.67-57.13C46.77-4.86,31.71.93,31.07,1.19a2.43,2.43,0,0,0,1.81,4.5c.13-.05,12.71-4.88,27,9.38C73,28.21,69.14,41.55,69,42.1a2.42,2.42,0,0,0,1.59,3,2.64,2.64,0,0,0,.73.11,2.43,2.43,0,0,0,2.31-1.7C73.81,42.88,78.58,26.93,63.28,11.64ZM57.87,34.78a2.43,2.43,0,0,0,2.39,2,2.22,2.22,0,0,0,.37,0,2.41,2.41,0,0,0,2-2.76c-3.21-21-22-21.94-22.19-21.95a2.43,2.43,0,0,0-.19,4.85C40.43,16.94,55.25,17.73,57.87,34.78Z"></path>
+</svg>
+<div class="popup">
+<svg viewBox="0 0 17 17">
+<path d="M13.24,11.13a7.09,7.09,0,0,1-9.54,0A6.36,6.36,0,0,0,0,17H17A6.37,6.37,0,0,0,13.24,11.13ZM3,8.65V4.33H2.77a6.31,6.31,0,0,1,11.41,0H14V8.65a2.18,2.18,0,0,0,2.21-2.16A2.16,2.16,0,0,0,15.07,4.6,7,7,0,0,0,8.47,0a7,7,0,0,0-6.6,4.6A2.15,2.15,0,0,0,.74,6.49,2.18,2.18,0,0,0,3,8.65ZM8.47,2.17A4.73,4.73,0,0,0,3.69,6.85a4.74,4.74,0,0,0,4.78,4.69,4.74,4.74,0,0,0,4.78-4.69A4.73,4.73,0,0,0,8.47,2.17Z"></path>
+</svg>
+<div class="inner">
+<div class="text"> 拨打服务热线： </div>
+<div class="number"> 4008169999 </div>
+</div>
+</div>
+</div>
+<div class="icon" data-returntop="">
+<svg viewBox="0 0 31 31">
+<path d="M7.67,21l7.83-7.83L23.33,21l1.58-1.55L15.5,10,6.09,19.43ZM28.79,15.5A13.29,13.29,0,1,0,15.5,28.79,13.3,13.3,0,0,0,28.79,15.5ZM0,15.5A15.5,15.5,0,1,1,15.5,31,15.51,15.51,0,0,1,0,15.5Z"></path>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<script defer src="/static/js/manifest.js"></script>
+<script defer src="/static/js/vendor.51b85476.js"></script>
+<script defer src="/static/js/yili.79f6d778.js"></script>
+<script src="https://yilicmm.yili.com/ut_webcall/popup_chat?cmd=robot&uid=8888&uname=%E4%BC%8A%E5%B0%8F%E4%BC%8A&project_id=&full=1" ></script>
+<!-- 百度统计 -->
+<script>
+var _hmt = _hmt || [];
+(function() {
+var hm = document.createElement("script");
+hm.src = "https://hm.baidu.com/hm.js?c990308e910ebd39574f897d34c68ea0";
+var s = document.getElementsByTagName("script")[0];
+s.parentNode.insertBefore(hm, s);
+})();
+</script>
+<!-- END 百度统计 -->
+<script type="text/javascript" defer="">
+document.addEventListener('DOMContentLoaded', function () {
+// 切换全球布局
+window.MOUP_METHODS['CHANGE_GLOBAL'] = function (value) {
+if (window.MOUP_SWIPER['SWIPER_GLOBAL']) {
+var swiper = window.MOUP_SWIPER['SWIPER_GLOBAL'];
+var data = $('[data-global=' + value + ']');
+swiper.removeAllSlides();
+if (data.find('.swiper-slide').length) {
+var slides = [];
+data.find('.swiper-slide').each(function () {
+var slide = $('<div>').append($(this).clone()).html();
+slides.unshift(slide);
+});
+swiper.addSlide(0, slides);
+if (swiper.params.loop) {
+swiper.slideToLoop(0);
+} else {
+swiper.slideTo(0);
+}
+window.MOUP_REINIT && window.MOUP_REINIT('lazy');
+}
+}
+}
+// 切换可持续发展
+window.MOUP_METHODS['CHANGE_SUSTAINABLE'] = function (dom) {
+var aside = $(dom).find('[data-aside]');
+if (aside.length) {
+$('[data-aside-content]').children().remove();
+$('[data-aside-content]').append(aside.children().clone());
+}
+}
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>密封磨损监测系统</title>
+    <!-- 使用 CDN，避免本地文件编码问题 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body { background: #f4f6f9; padding-top: 56px; font-size: 0.875rem; }
+        .card { border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 0.75rem; }
+        .card-header { padding: 0.5rem 0.75rem; font-weight: 600; font-size: 0.875rem; background: #f8f9fa; }
+        .card-body { padding: 0.75rem; }
+        .nav-tabs .nav-link { font-weight: 500; cursor: pointer; padding: 0.5rem 0.75rem; font-size: 0.85rem; }
+        .health-chart { height: 350px; width: 100%; }
+        .kpi-card { text-align: center; }
+        .kpi-card .card-body { padding: 0.5rem; }
+        .kpi-label { font-size: 0.7rem; color: #6c757d; margin-bottom: 0.25rem; }
+        .kpi-value { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
+        .empty-state { padding: 40px 20px; }
+        .empty-state i { font-size: 3rem; color: #adb5bd; }
+        .table-sm td, .table-sm th { padding: 0.3rem 0.5rem; font-size: 0.8rem; vertical-align: middle; }
+        .badge { font-size: 0.75rem; }
+        .btn-sm { font-size: 0.75rem; padding: 0.2rem 0.5rem; }
+        .tab-content { margin-top: 0.5rem !important; }
+        .navbar { padding-top: 0.4rem; padding-bottom: 0.4rem; }
+        .navbar-brand { font-size: 1rem; }
+        .list-group-item { padding: 0.4rem 0.6rem; }
+        .progress { height: 18px; }
+        .progress-bar { font-size: 0.7rem; line-height: 18px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('seal.seal_dashboard') }}">
+            <i class="bi bi-graph-up"></i> 密封磨损监测系统
+        </a>
+        <div>
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-light btn-sm me-2">
+                <i class="bi bi-house-door"></i> 返回主系统
+            </a>
+            <div class="d-inline-block text-white" id="clock" style="font-size:0.85rem;"></div>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid" style="max-width:1400px; margin-top:0.5rem;">
+    <ul class="nav nav-tabs" id="mainTab" role="tablist"></ul>
+    <div class="tab-content" id="mainTabContent"></div>
+</div>
+
+<script src="{{ url_for('seal.static', filename='lib/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+
+<script>
+// API 基础路径（密封系统独立前缀）
+const API_BASE = '/seal';
+let devices = [];
+let statusData = {};
+let activePolls = {};
+
+async function api(url, options = {}) {
+    const res = await fetch(API_BASE + url, options);
+    return res.json();
+}
+
+// ============================================
+// 初始化
+// ============================================
+async function init() {
+    try {
+        const list = await api('/api/devices/list');
+        devices = list.map(d => ({ id: d.device_id, name: d.device_name }));
+        statusData = await api('/api/devices/status');
+        if (devices.length === 0) {
+            document.getElementById('mainTabContent').innerHTML = '<div class="alert alert-warning mt-2">没有设备，请先在"配置"中添加设备</div>';
+            return;
+        }
+        buildUI();
+        loadAllData();
+    } catch (e) {
+        console.error(e);
+        document.getElementById('mainTabContent').innerHTML = '<div class="alert alert-danger mt-2">无法连接服务器</div>';
+    }
+}
+
+// ============================================
+// 构建设备面板HTML
+// ============================================
+function buildDevicePaneMinimal(device) {
+    return `
+        <div class="row g-2">
+            <div class="col-md-2"><div class="card kpi-card"><div class="card-body">
+                <div class="kpi-label"><i class="bi bi-activity"></i> 状态</div>
+                <div id="status_${device.id}"><span class="badge bg-secondary">-</span></div>
+            </div></div></div>
+            <div class="col-md-2"><div class="card kpi-card"><div class="card-body">
+                <div class="kpi-label"><i class="bi bi-heart-pulse"></i> 健康度</div>
+                <div class="kpi-value" id="health_${device.id}">-</div>
+            </div></div></div>
+            <div class="col-md-2"><div class="card kpi-card"><div class="card-body">
+                <div class="kpi-label"><i class="bi bi-hourglass-split"></i> RUL</div>
+                <div class="kpi-value" id="rul_${device.id}">-<small>天</small></div>
+            </div></div></div>
+            <div class="col-md-2"><div class="card kpi-card"><div class="card-body">
+                <div class="kpi-label"><i class="bi bi-exclamation-triangle"></i> 异常点</div>
+                <div class="kpi-value" id="anomaly_${device.id}">-</div>
+            </div></div></div>
+            <div class="col-md-4"><div class="card kpi-card"><div class="card-body">
+                <div class="d-flex gap-1 justify-content-center">
+                    <button class="btn btn-primary btn-sm" onclick="analyze('${device.id}')"><i class="bi bi-play-fill"></i> 分析</button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="showLatest('${device.id}')"><i class="bi bi-file-text"></i> 最新</button>
+                    <button class="btn btn-outline-success btn-sm" onclick="refreshDevice('${device.id}')"><i class="bi bi-arrow-repeat"></i> 刷新</button>
+                </div>
+            </div></div></div>
+        </div>
+        <div id="progress_${device.id}" style="display:none;" class="mb-2">
+            <div class="d-flex align-items-center p-2 bg-light rounded">
+                <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                <div class="flex-grow-1"><div class="progress" style="height:18px;"><div id="bar_${device.id}" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%">0%</div></div></div>
+                <small id="msg_${device.id}" class="text-muted ms-2"></small>
+            </div>
+        </div>
+        <div class="row g-2">
+            <div class="col-md-5"><div class="card h-100"><div class="card-header"><i class="bi bi-clock-history"></i> 分析记录</div>
+                <div class="card-body p-0" style="max-height:400px;overflow-y:auto;">
+                    <div id="history_${device.id}" style="padding:1rem;text-align:center;color:#adb5bd;"><div class="spinner-border spinner-border-sm"></div> 加载中...</div>
+                </div></div>
+            </div>
+            <div class="col-md-7"><div class="card h-100"><div class="card-header"><i class="bi bi-graph-up-arrow"></i> 分析详情</div>
+                <div class="card-body">
+                    <div id="detail_${device.id}" class="empty-state text-center"><i class="bi bi-bar-chart-steps"></i><p class="mt-2">暂无分析数据</p></div>
+                    <div id="reportInfo_${device.id}"></div>
+                    <div id="chart_${device.id}" class="health-chart" style="display:none;"></div>
+                    <div id="download_${device.id}" class="mt-2 text-end"></div>
+                </div></div>
+            </div>
+        </div>`;
+}
+
+// ============================================
+// 构建完整界面
+// ============================================
+function buildUI() {
+    const tabUl = document.getElementById('mainTab');
+    const contentDiv = document.getElementById('mainTabContent');
+    let tabsHtml = '', panesHtml = '';
+
+    devices.forEach((device, i) => {
+        const active = i === 0 ? 'active' : '';
+        const show = i === 0 ? 'show active' : '';
+        tabsHtml += `<li class="nav-item"><a class="nav-link ${active}" data-bs-toggle="tab" href="#pane_${device.id}"><i class="bi bi-cpu"></i> ${escapeHtml(device.name)}</a></li>`;
+        panesHtml += `<div class="tab-pane fade ${show}" id="pane_${device.id}">${buildDevicePaneMinimal(device)}</div>`;
+    });
+
+    tabsHtml += `<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#uploadTab"><i class="bi bi-cloud-upload"></i> 上传</a></li>`;
+    tabsHtml += `<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#configTab"><i class="bi bi-gear"></i> 配置</a></li>`;
+
+    panesHtml += `
+    <div class="tab-pane fade" id="uploadTab"><div class="row justify-content-center"><div class="col-md-6">
+        <div class="card"><div class="card-header"><i class="bi bi-cloud-upload"></i> 上传CSV文件</div><div class="card-body">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="mb-2"><label style="font-size:0.8rem;">选择设备</label><select name="device_id" class="form-select form-select-sm" required>${devices.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('')}</select></div>
+                <div class="mb-2"><label style="font-size:0.8rem;">CSV文件（可多选）</label><input type="file" name="files" class="form-control form-control-sm" multiple accept=".csv" required></div>
+                <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-cloud-arrow-up"></i> 上传文件</button>
+            </form>
+            <div id="uploadResult" class="mt-2"></div>
+        </div></div>
+    </div></div></div>`;
+
+    panesHtml += `
+    <div class="tab-pane fade" id="configTab"><div class="row g-2">
+        <div class="col-md-4">
+            <div class="card"><div class="card-header"><i class="bi bi-cpu"></i> 设备管理</div><div class="card-body">
+                <div id="deviceList" class="list-group mb-2" style="max-height:400px;overflow-y:auto;">
+                    ${devices.map(d => `<div class="list-group-item d-flex justify-content-between align-items-center py-1" id="devItem_${d.id}"><span><i class="bi bi-cpu"></i> ${escapeHtml(d.name)}</span><button class="btn btn-sm btn-outline-danger p-0 px-1" onclick="deleteDevice('${d.id}')"><i class="bi bi-trash"></i></button></div>`).join('')}
+                </div>
+                <label style="font-size:0.75rem;">添加新设备</label>
+                <div class="input-group input-group-sm"><input type="text" id="newDeviceName" class="form-control" placeholder="输入设备名称"><button class="btn btn-primary" onclick="addDevice()"><i class="bi bi-plus"></i> 添加</button></div>
+            </div></div>
+        </div>
+        <div class="col-md-8">
+            <div class="card"><div class="card-header"><i class="bi bi-gear"></i> 模型参数配置</div><div class="card-body">
+                <div class="mb-2"><select id="configDevice" class="form-select form-select-sm">${devices.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('')}</select></div>
+                <div class="row g-1" id="paramInputs"><div class="col-12 text-center text-muted">加载中...</div></div>
+                <button type="button" id="saveConfigBtn" class="btn btn-success btn-sm mt-2"><i class="bi bi-check-circle"></i> 保存配置</button>
+                <span id="configMsg" class="ms-2 text-success" style="font-size:0.8rem;"></span>
+            </div></div>
+        </div>
+    </div></div>`;
+
+    tabUl.innerHTML = tabsHtml;
+    contentDiv.innerHTML = panesHtml;
+    loadParamInputs();
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+}
+
+// ============================================
+// 加载参数输入框
+// ============================================
+async function loadParamInputs() {
+    try {
+        const labels = await api('/api/param_labels');
+        const paramKeys = [
+            'SEAL_VAE_SEQ_LEN', 'SEAL_VAE_HIDDEN_DIM', 'SEAL_VAE_LATENT_DIM',
+            'SEAL_VAE_EPOCHS', 'SEAL_VAE_BATCH_SIZE', 'SEAL_HEALTH_WARNING',
+            'SEAL_HEALTH_ALARM', 'SEAL_CIP_TEMPERATURE_THRESHOLD', 'SEAL_EMPTY_CURRENT_THRESHOLD'
+        ];
+        document.getElementById('paramInputs').innerHTML = paramKeys.map(key => `
+            <div class="col-md-4"><label style="font-size:0.7rem;">${labels[key] || key}</label>
+            <input type="number" class="form-control form-control-sm" name="${key}" step="any" placeholder="${labels[key] || key}"></div>`).join('');
+        if (devices.length > 0) loadConfigForDevice(devices[0].id);
+    } catch (e) {
+        document.getElementById('paramInputs').innerHTML = '<div class="col-12 text-danger">加载参数失败</div>';
+    }
+}
+
+// ============================================
+// 刷新配置页设备列表
+// ============================================
+function refreshDeviceListInConfig() {
+    const deviceListDiv = document.getElementById('deviceList');
+    if (!deviceListDiv) return;
+    if (devices.length === 0) {
+        deviceListDiv.innerHTML = '<div class="list-group-item text-center text-muted" style="font-size:0.8rem;">暂无设备</div>';
+    } else {
+        deviceListDiv.innerHTML = devices.map(d => `
+            <div class="list-group-item d-flex justify-content-between align-items-center py-1" id="devItem_${d.id}">
+                <span><i class="bi bi-cpu"></i> ${escapeHtml(d.name)}</span>
+                <button class="btn btn-sm btn-outline-danger p-0 px-1" onclick="deleteDevice('${d.id}')"><i class="bi bi-trash"></i></button>
+            </div>`).join('');
+    }
+}
+
+// ============================================
+// 加载所有设备数据
+// ============================================
+async function loadAllData() {
+    for (const d of devices) { updateKPI(d.id); await loadHistory(d.id); }
+}
+
+function updateKPI(deviceId) {
+    const info = statusData[deviceId];
+    if (!info) return;
+    const status = info.status || 'Unknown';
+    const health = info.avg_health != null ? Number(info.avg_health).toFixed(2) : '-';
+    const rul = info.rul != null ? info.rul : '-';
+    const anomaly = info.anomaly_count != null ? info.anomaly_count : '-';
+    const colors = { Normal: 'success', Warning: 'warning', Alarm: 'danger', Unknown: 'secondary' };
+    document.getElementById('status_' + deviceId).innerHTML = `<span class="badge bg-${colors[status]}">${status}</span>`;
+    document.getElementById('health_' + deviceId).textContent = health;
+    document.getElementById('rul_' + deviceId).innerHTML = (typeof rul === 'number' ? rul.toFixed(1) : rul) + '<small style="font-size:0.7rem;">天</small>';
+    document.getElementById('anomaly_' + deviceId).textContent = anomaly;
+}
+
+async function loadHistory(deviceId) {
+    const c = document.getElementById('history_' + deviceId);
+    if (!c) return;
+    try {
+        const h = await api('/api/history/' + deviceId);
+        if (!h || !h.length) { c.innerHTML = '<div style="padding:1rem;text-align:center;color:#adb5bd;"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-1">暂无记录</p></div>'; return; }
+        let html = '<table class="table table-sm table-hover mb-0"><thead class="table-light"><tr><th>时间</th><th>健康度</th><th>RUL</th><th style="width:80px;">操作</th></tr></thead><tbody>';
+        h.forEach(item => {
+            const hv = item.avg_health != null ? Number(item.avg_health).toFixed(2) : '-';
+            const color = item.avg_health != null ? (item.avg_health >= 0.8 ? 'success' : item.avg_health >= 0.5 ? 'warning' : 'danger') : 'secondary';
+            html += `<tr><td><small>${(item.time||'-').substring(5,16)}</small></td><td><span class="badge bg-${color}">${hv}</span></td><td>${item.rul||'-'}</td><td><button class="btn btn-sm btn-outline-info p-0 px-1" onclick="viewReport(${item.id},'${deviceId}')"><i class="bi bi-eye"></i></button><button class="btn btn-sm btn-outline-danger p-0 px-1" onclick="deleteRecord(${item.id},'${deviceId}')"><i class="bi bi-trash"></i></button></td></tr>`;
+        });
+        html += '</tbody></table>'; c.innerHTML = html;
+    } catch (e) { c.innerHTML = '<div style="padding:1rem;text-align:center;color:#dc3545;">加载失败</div>'; }
+}
+
+async function deleteRecord(rid, did) {
+    if (!confirm('确定删除？')) return;
+    await api('/api/delete_record/' + rid, { method: 'DELETE' });
+    loadHistory(did);
+}
+
+// ============================================
+// 设备管理
+// ============================================
+async function addDevice() {
+    const nameInput = document.getElementById('newDeviceName');
+    const name = nameInput.value.trim();
+    if (!name) { alert('请输入设备名称'); return; }
+    try {
+        const result = await api('/api/devices/add', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({device_name: name}) });
+        if (result.status === 'ok') {
+            nameInput.value = '';
+            const newDevice = { id: result.device_id, name: result.device_name };
+            devices.push(newDevice);
+
+            const tabUl = document.getElementById('mainTab');
+            const refTab = tabUl.querySelector('[href="#uploadTab"]').parentElement;
+            const tabLi = document.createElement('li'); tabLi.className = 'nav-item';
+            tabLi.innerHTML = `<a class="nav-link" data-bs-toggle="tab" href="#pane_${newDevice.id}"><i class="bi bi-cpu"></i> ${escapeHtml(newDevice.name)}</a>`;
+            tabUl.insertBefore(tabLi, refTab);
+
+            const panesContainer = document.getElementById('mainTabContent');
+            const refPane = document.getElementById('uploadTab');
+            const newPane = document.createElement('div'); newPane.className = 'tab-pane fade'; newPane.id = 'pane_' + newDevice.id;
+            newPane.innerHTML = buildDevicePaneMinimal(newDevice);
+            panesContainer.insertBefore(newPane, refPane);
+
+            refreshDeviceListInConfig();
+            const configSelect = document.getElementById('configDevice');
+            if (configSelect) configSelect.innerHTML += `<option value="${newDevice.id}">${escapeHtml(newDevice.name)}</option>`;
+            const uploadSelect = document.querySelector('#uploadTab select[name="device_id"]');
+            if (uploadSelect) uploadSelect.innerHTML += `<option value="${newDevice.id}">${escapeHtml(newDevice.name)}</option>`;
+
+            statusData = await api('/api/devices/status');
+            updateKPI(newDevice.id); loadHistory(newDevice.id);
+            alert('设备已添加');
+        } else { alert('添加失败: ' + result.error); }
+    } catch (e) { alert('添加失败: ' + e.message); }
+}
+
+async function deleteDevice(deviceId) {
+    if (!confirm('删除设备将清除所有相关数据，确定继续？')) return;
+    try {
+        await api('/api/devices/delete/' + deviceId, { method: 'DELETE' });
+        devices = devices.filter(d => d.id !== deviceId);
+
+        const tabLink = document.querySelector(`[href="#pane_${deviceId}"]`);
+        if (tabLink) tabLink.parentElement.remove();
+        const pane = document.getElementById('pane_' + deviceId);
+        if (pane) pane.remove();
+
+        refreshDeviceListInConfig();
+
+        const uploadSelect = document.querySelector('#uploadTab select[name="device_id"]');
+        if (uploadSelect) uploadSelect.innerHTML = devices.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
+        const configSelect = document.getElementById('configDevice');
+        if (configSelect) configSelect.innerHTML = devices.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
+
+        if (devices.length === 0) {
+            document.getElementById('mainTabContent').innerHTML = '<div class="alert alert-warning mt-2">所有设备已删除，请在"配置"中添加新设备</div>';
+            document.getElementById('mainTab').innerHTML = '<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#uploadTab">上传</a></li><li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#configTab">配置</a></li>';
+        } else {
+            const firstTab = document.querySelector('#mainTab .nav-link[href^="#pane_"]');
+            if (firstTab) { const tab = new bootstrap.Tab(firstTab); tab.show(); }
+        }
+        statusData = await api('/api/devices/status');
+        for (const d of devices) updateKPI(d.id);
+    } catch (e) { alert('删除失败: ' + e.message); }
+}
+
+// ============================================
+// 刷新、分析、轮询、图表等函数
+// ============================================
+async function refreshDevice(did) {
+    statusData = await api('/api/devices/status'); updateKPI(did); loadHistory(did);
+}
+
+async function analyze(did) {
+    if (activePolls[did]) { alert('分析进行中'); return; }
+    document.getElementById('progress_' + did).style.display = 'block';
+    try {
+        const config = JSON.parse(localStorage.getItem('seal_config_' + did) || '{}');
+        const d = await api('/api/analyze_async/' + did, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(config) });
+        if (d.task_id) poll(did, d.task_id);
+        else document.getElementById('progress_' + did).style.display = 'none';
+    } catch (e) { document.getElementById('progress_' + did).style.display = 'none'; }
+}
+
+function poll(did, taskId) {
+    if (activePolls[did]) clearInterval(activePolls[did]);
+    const interval = setInterval(async () => {
+        try {
+            const d = await api('/api/task/' + taskId);
+            if (d.progress) {
+                const percent = Math.round((d.progress.current/d.progress.total)*100);
+                document.getElementById('bar_' + did).style.width = percent + '%';
+                document.getElementById('bar_' + did).textContent = percent + '%';
+                document.getElementById('msg_' + did).textContent = d.progress.message;
+            }
+            if (d.status === 'completed') {
+                clearInterval(interval); delete activePolls[did];
+                document.getElementById('progress_' + did).style.display = 'none';
+                statusData = await api('/api/devices/status'); updateKPI(did); loadHistory(did);
+                if (d.result?.success) displayReportInDetail(did, d.result, d.db_id||d.result.id);
+            }
+            if (d.status === 'failed') {
+                clearInterval(interval); delete activePolls[did];
+                document.getElementById('progress_' + did).style.display = 'none';
+                alert('分析失败: ' + (d.result?.message||'未知错误'));
+            }
+        } catch (e) { clearInterval(interval); delete activePolls[did]; document.getElementById('progress_' + did).style.display = 'none'; }
+    }, 1000);
+    activePolls[did] = interval;
+}
+
+async function viewReport(id, did) {
+    try {
+        const r = await api('/api/report/' + id);
+        if (!r?.success) { alert('报告无效'); return; }
+        document.querySelector(`[href="#pane_${did}"]`)?.click();
+        setTimeout(() => displayReportInDetail(did, r, id), 200);
+    } catch (e) { alert('获取失败'); }
+}
+
+async function showLatest(did) {
+    const h = await api('/api/history/' + did);
+    if (h?.length > 0) viewReport(h[0].id, did); else alert('暂无报告');
+}
+
+function displayReportInDetail(did, result, reportId) {
+    document.getElementById('detail_' + did).style.display = 'none';
+    document.getElementById('reportInfo_' + did).innerHTML = `<div class="row g-2 mb-2"><div class="col-4"><small>健康度</small><br><strong>${result.avg_health||'-'}</strong></div><div class="col-4"><small>RUL</small><br><strong>${result.rul||'-'}天</strong></div><div class="col-4"><small>异常点</small><br><strong>${result.anomaly_count||0}</strong></div></div>`;
+    const chartDiv = document.getElementById('chart_' + did);
+    if (chartDiv && result.dates?.length > 0) {
+        chartDiv.style.display = 'block';
+        if (chartDiv._echart) chartDiv._echart.dispose();
+        const chart = echarts.init(chartDiv); chartDiv._echart = chart;
+        chart.setOption({
+            tooltip:{trigger:'axis'},legend:{data:['健康分数','警告阈值','报警阈值'],top:5,textStyle:{fontSize:10}},
+            grid:{top:30,bottom:50,left:40,right:20},
+            xAxis:{type:'category',data:result.dates,axisLabel:{rotate:45,fontSize:9,interval:Math.max(1,Math.floor(result.dates.length/12))}},
+            yAxis:{min:0,max:1},dataZoom:[{type:'inside'},{type:'slider',bottom:5,height:15}],
+            series:[
+                {name:'健康分数',type:'line',data:result.health_scores,smooth:true,lineStyle:{width:2},markPoint:{data:(result.anomalies||[]).map(a=>({name:'异常',coord:[a.date,a.health],symbol:'pin',symbolSize:35}))}},
+                {name:'警告阈值',type:'line',data:Array(result.dates.length).fill(result.threshold||0.5),lineStyle:{type:'dashed',color:'orange',width:1},symbol:'none'},
+                {name:'报警阈值',type:'line',data:Array(result.dates.length).fill(0.3),lineStyle:{type:'dashed',color:'red',width:1},symbol:'none'}
+            ]
+        });
+        window.addEventListener('resize',()=>chart.resize());
+    }
+    document.getElementById('download_' + did).innerHTML = `<a href="${API_BASE}/download/report/${reportId||result.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-download"></i> 下载CSV</a>`;
+}
+
+async function loadConfigForDevice(did) {
+    try {
+        const config = await api('/api/config/' + did);
+        for (const [key,val] of Object.entries(config)) {
+            const input = document.querySelector(`#configTab input[name="${key}"]`);
+            if (input) input.value = val != null ? val : '';
+        }
+        localStorage.setItem('seal_config_'+did, JSON.stringify(config));
+    } catch (e) {}
+}
+
+// ===== 事件监听 =====
+document.addEventListener('submit', function(e) {
+    if (e.target.id === 'uploadForm') {
+        e.preventDefault();
+        const btn = e.target.querySelector('button');
+        btn.disabled = true; btn.innerHTML = '上传中...';
+        fetch(API_BASE + '/upload',{method:'POST',body:new FormData(e.target)})
+            .then(r=>r.json())
+            .then(d=>{ document.getElementById('uploadResult').innerHTML = `<div class="alert alert-success py-1 px-2" style="font-size:0.8rem;">✅ 成功上传 ${d.uploaded} 个文件</div>`; })
+            .catch(()=>{ document.getElementById('uploadResult').innerHTML = '<div class="alert alert-danger py-1 px-2" style="font-size:0.8rem;">上传失败</div>'; })
+            .finally(()=>{ btn.disabled = false; btn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 上传文件'; });
+    }
+});
+
+document.addEventListener('click', function(e) {
+    if (e.target.closest('#saveConfigBtn')) {
+        const did = document.getElementById('configDevice').value;
+        const config = {};
+        document.querySelectorAll('#paramInputs input[name]').forEach(i => { if (i.value !== '') config[i.name] = isNaN(i.value)?i.value:parseFloat(i.value); });
+        fetch(API_BASE + '/api/config/'+did,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)})
+            .then(()=>{ document.getElementById('configMsg').textContent = '✅ 已保存'; setTimeout(()=>document.getElementById('configMsg').textContent='',2000); localStorage.setItem('seal_config_'+did,JSON.stringify(config)); });
+    }
+});
+
+document.addEventListener('change', function(e) {
+    if (e.target.id === 'configDevice') loadConfigForDevice(e.target.value);
+});
+
+setInterval(()=>{ document.getElementById('clock').textContent = new Date().toLocaleString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }, 1000);
+
+init();
+</script>
+</body>
+</html>
