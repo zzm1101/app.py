@@ -62,7 +62,7 @@
     <div class="card">
         <div class="card-header">
             <h5><i class="fa fa-magic me-2"></i>模拟数据生成器（专家版）</h5>
-            <p class="mb-0 text-muted small">支持自定义因子库、公式模板、PPK强制、实时预览、配置持久化</p>
+            <p class="mb-0 text-muted small">支持自定义因子库、公式模板、PPK强制、实时预览、配置持久化（保存到服务器）</p>
         </div>
         <div class="card-body">
             <form id="simulateForm">
@@ -196,38 +196,25 @@
     let ctqFormulas = {};
     let ctqForceCpk = {};
 
-    const STORAGE_KEY = 'simulate_config_v2';
-    const CUSTOM_LIB_KEY = 'custom_factor_libraries';
     let customLibraries = [];
 
     // ========== 工具函数 ==========
-    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
 
-    function validateFormula(formula, availableFeatures) {
-        if (!formula.trim()) return { valid: true, message: '' };
-        const dangerous = ['__', 'import', 'exec', 'eval', 'open', 'file', 'system', 'subprocess', 'os.', 'sys.'];
-        for (let kw of dangerous) if (formula.toLowerCase().includes(kw)) return { valid: false, message: `公式包含非法关键字: ${kw}` };
-        let stack = 0;
-        for (let ch of formula) { if (ch === '(') stack++; if (ch === ')') stack--; if (stack < 0) return { valid: false, message: '括号不匹配' }; }
-        if (stack !== 0) return { valid: false, message: '括号未闭合' };
-        const identifiers = formula.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || [];
-        const allowedFunctions = ['sin', 'cos', 'tan', 'exp', 'log', 'log10', 'sqrt', 'abs', 'pow'];
-        const missingVars = [];
-        for (let id of identifiers) {
-            if (allowedFunctions.includes(id)) continue;
-            if (!availableFeatures.includes(id) && !/^\d+$/.test(id)) {
-                missingVars.push(id);
-            }
-        }
-        if (missingVars.length) {
-            return { valid: false, message: `未知变量: ${missingVars.join(', ')}。可用特征: ${availableFeatures.join(', ') || '无'}` };
-        }
-        try {
-            new Function(...availableFeatures, `"use strict"; return (${formula});`)(...availableFeatures.map(() => 0));
-            return { valid: true, message: '' };
-        } catch (e) {
-            return { valid: false, message: `语法错误: ${e.message}` };
-        }
+    function showResult(type, msg) {
+        const div = document.getElementById('resultMsg');
+        div.className = `alert alert-${type === 'danger' ? 'danger' : (type === 'warning' ? 'warning' : 'success')}`;
+        div.innerHTML = `<i class="fa fa-${type === 'danger' ? 'exclamation-triangle' : (type === 'warning' ? 'exclamation-triangle' : 'check-circle')} me-2"></i>${escapeHtml(msg)}`;
+        div.style.display = 'block';
+        setTimeout(() => div.style.display = 'none', 5000);
     }
 
     // ========== CTQ 选择渲染 ==========
@@ -250,7 +237,7 @@
         renderCtqCards();
     }
 
-    // ========== 特征管理（动态） ==========
+    // ========== 特征管理 ==========
     function addFeatureForCtq(ctqId) {
         if (!ctqFeatures[ctqId]) ctqFeatures[ctqId] = [];
         ctqFeatures[ctqId].push({
@@ -319,20 +306,87 @@
         }
     }
 
-    function updateFormulaValidation(ctqId) {
+    // ========== 公式验证（前端基础检查 + 后端API验证） ==========
+    function validateFormula(formula) {
+        if (!formula.trim()) return { valid: true, message: '' };
+
+        const dangerous = ['__', 'import', 'exec', 'eval', 'open', 'file', 'system', 'subprocess', 'os.', 'sys.'];
+        for (let kw of dangerous) {
+            if (formula.toLowerCase().includes(kw)) {
+                return { valid: false, message: `公式包含非法关键字: ${kw}` };
+            }
+        }
+
+        let stack = 0;
+        for (let ch of formula) {
+            if (ch === '(') stack++;
+            if (ch === ')') stack--;
+            if (stack < 0) return { valid: false, message: '括号不匹配' };
+        }
+        if (stack !== 0) return { valid: false, message: '括号未闭合' };
+
+        return { valid: true, message: '' };
+    }
+
+    async function updateFormulaValidation(ctqId) {
         const formulaInput = document.querySelector(`.ctq-formula[data-ctq="${ctqId}"]`);
-        if (formulaInput) {
-            const features = (ctqFeatures[ctqId] || []).map(f => f.name);
-            const result = validateFormula(formulaInput.value, features);
-            if (result.valid) {
+        if (!formulaInput) return;
+
+        const formula = formulaInput.value;
+
+        const basicCheck = validateFormula(formula);
+        if (!basicCheck.valid) {
+            formulaInput.classList.remove('is-valid');
+            formulaInput.classList.add('is-invalid');
+            const feedback = formulaInput.closest('.formula-config')?.querySelector('.formula-feedback');
+            if (feedback) feedback.textContent = basicCheck.message;
+            return;
+        }
+
+        const features = ctqFeatures[ctqId] || [];
+        const sampleValues = {};
+        for (let feat of features) {
+            const featObj = feat;
+            if (featObj.type === 'numeric') {
+                if (featObj.distribution === 'normal') {
+                    const parts = (featObj.normalParams || '0,1').split(',').map(parseFloat);
+                    sampleValues[featObj.name] = parts[0] || 0;
+                } else if (featObj.distribution === 'uniform') {
+                    const parts = (featObj.uniformRange || '0,1').split(',').map(parseFloat);
+                    sampleValues[featObj.name] = (parts[0] + parts[1]) / 2 || 0;
+                } else {
+                    sampleValues[featObj.name] = 0;
+                }
+            } else {
+                sampleValues[featObj.name] = 'A';
+            }
+        }
+
+        try {
+            const res = await fetch('/simulate/test_formula', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf_token },
+                body: JSON.stringify({ formula, sample_values: sampleValues })
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
                 formulaInput.classList.remove('is-invalid');
                 formulaInput.classList.add('is-valid');
+                const feedback = formulaInput.closest('.formula-config')?.querySelector('.formula-feedback');
+                if (feedback) feedback.textContent = '';
             } else {
                 formulaInput.classList.remove('is-valid');
                 formulaInput.classList.add('is-invalid');
+                const feedback = formulaInput.closest('.formula-config')?.querySelector('.formula-feedback');
+                if (feedback) feedback.textContent = data.message || '公式无效';
             }
+        } catch (err) {
+            console.error('验证请求失败', err);
+            formulaInput.classList.remove('is-valid');
+            formulaInput.classList.add('is-invalid');
             const feedback = formulaInput.closest('.formula-config')?.querySelector('.formula-feedback');
-            if (feedback) feedback.textContent = result.message;
+            if (feedback) feedback.textContent = '网络错误，无法验证公式';
         }
     }
 
@@ -384,7 +438,7 @@
         alert(`已导入因子库「${libKey}」的默认特征和公式`);
     }
 
-    // ========== 渲染CTQ卡片（含“应用”按钮） ==========
+    // ========== 渲染CTQ卡片 ==========
     function renderCtqCards() {
         const container = document.getElementById('ctqFeaturesContainer');
         container.innerHTML = '';
@@ -436,18 +490,16 @@
                         <div class="col-md-6"><label class="param-label">目标 PPK</label><input type="number" step="any" class="form-control form-control-sm target-cpk" data-ctq="${ctqId}" value="${forceCfg.target_cpk}"></div>
                         <div class="col-md-6"><label class="param-label">额外噪声标准差（缩放后添加）</label><input type="number" step="any" class="form-control form-control-sm cpk-noise" data-ctq="${ctqId}" value="${forceCfg.noise_std}"></div>
                     </div>
-                    <div class="text-muted small mt-1">公式支持 + - * / ** sin cos tan exp log log10 sqrt abs 等，变量名为特征名。留空则使用默认PPK模型。</div>
+                    <div class="text-muted small mt-1">公式支持 + - * / ** sin cos tan exp log log10 sqrt abs pow max min 等，变量名为特征名。留空则使用默认PPK模型。</div>
                 </div>
                 <div class="feature-list" id="featureList_${ctqId}"></div>
             `;
             container.appendChild(card);
             refreshFeatureList(ctqId);
 
-            // 绑定按钮事件
             card.querySelector('.add-feature-btn').addEventListener('click', () => addFeatureForCtq(ctqId));
             card.querySelector('.factor-import-btn').addEventListener('click', () => importFromFactorLibrary(ctqId, ctqName));
 
-            // 公式模板选择
             const templateSelect = card.querySelector('.formula-template-select');
             if (hasTemplate) {
                 templateSelect.addEventListener('change', (e) => {
@@ -461,15 +513,10 @@
                 });
             }
 
-            // 公式输入框事件
             const formulaInput = card.querySelector('.ctq-formula');
             formulaInput.addEventListener('input', () => updateFormulaValidation(ctqId));
-            formulaInput.addEventListener('change', e => {
-                ctqFormulas[ctqId] = e.target.value;
-                updateFormulaValidation(ctqId);
-            });
+            formulaInput.addEventListener('change', () => updateFormulaValidation(ctqId));
 
-            // **应用公式按钮**
             card.querySelectorAll('.apply-formula-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const ctqId = parseInt(this.dataset.ctq);
@@ -483,11 +530,9 @@
                 });
             });
 
-            // 噪声输入
             const noiseInput = card.querySelector('.formula-noise');
             noiseInput.addEventListener('change', e => { if (ctqForceCpk[ctqId]) ctqForceCpk[ctqId].noise_std = parseFloat(e.target.value) || 0; });
 
-            // 测试公式
             const testBtn = card.querySelector('.test-formula-btn');
             testBtn.addEventListener('click', async () => {
                 const formula = formulaInput.value;
@@ -515,7 +560,6 @@
                 await testFormula(ctqId, formula, sampleValues);
             });
 
-            // PPK 强制复选框
             const forceCheck = card.querySelector('.force-cpk-checkbox');
             const cpkParamsDiv = card.querySelector('.cpk-params');
             forceCheck.addEventListener('change', e => {
@@ -533,9 +577,8 @@
         }
     }
 
-    // ========== 配置收集（强制同步公式） ==========
+    // ========== 配置收集 ==========
     function collectConfig() {
-        // 强制从DOM同步公式
         document.querySelectorAll('.ctq-card').forEach(card => {
             const ctqId = parseInt(card.dataset.ctqId);
             const formulaInput = card.querySelector('.ctq-formula');
@@ -610,7 +653,7 @@
         return config;
     }
 
-    // ========== 实时预览（自动同步公式） ==========
+    // ========== 实时预览 ==========
     async function previewConfiguration() {
         document.querySelectorAll('.ctq-card').forEach(card => {
             const ctqId = parseInt(card.dataset.ctqId);
@@ -648,8 +691,8 @@
         }
     }
 
-    // ========== 配置持久化 ==========
-    function saveConfig() {
+    // ========== 配置持久化（服务器端） ==========
+    async function saveConfig() {
         const config = collectConfig();
         const toSave = {
             version: 2,
@@ -658,85 +701,85 @@
             ctqFormulas: ctqFormulas,
             ctqForceCpk: ctqForceCpk
         };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-        showResult('success', '配置已保存到浏览器');
-    }
-
-    function loadConfig() {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) { showResult('warning', '未找到已保存的配置'); return; }
         try {
-            const saved = JSON.parse(raw);
-            if (saved.version === 2) {
-                selectedCtqIds = saved.selectedCtqIds || [];
-                ctqFeatures = saved.ctqFeatures || {};
-                ctqFormulas = saved.ctqFormulas || {};
-                ctqForceCpk = saved.ctqForceCpk || {};
-                renderCtqSelector();
-                showResult('success', '配置加载成功');
-            } else {
-                showResult('danger', '配置版本不兼容');
-            }
-        } catch (e) { showResult('danger', '配置解析失败'); }
-    }
-
-    function showResult(type, msg) {
-        const div = document.getElementById('resultMsg');
-        div.className = `alert alert-${type}`;
-        div.innerHTML = `<i class="fa fa-${type==='success'?'check-circle':'exclamation-triangle'} me-2"></i>${msg}`;
-        div.style.display = 'block';
-        setTimeout(() => div.style.display = 'none', 5000);
-    }
-
-    // ========== 表单提交 ==========
-    document.getElementById('simulateForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const config = collectConfig();
-        if (!config.ctq_ids.length) { alert('请至少选择一个CTQ'); return; }
-        const generateBtn = document.getElementById('generateBtn');
-        generateBtn.disabled = true;
-        generateBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>生成中...';
-        try {
-            const res = await fetch('/simulate/generate', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf_token },
-                body: JSON.stringify(config)
+            const res = await fetch('/simulate/api/save_config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf_token },
+                body: JSON.stringify(toSave)
             });
-            if (config.auto_import) {
-                const data = await res.json();
-                if (data.status === 'success') showResult('success', data.message);
-                else throw new Error(data.error);
+            const data = await res.json();
+            if (data.status === 'success') {
+                showResult('success', '配置已保存到服务器');
             } else {
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `mock_data_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`;
-                a.click();
-                URL.revokeObjectURL(url);
-                showResult('success', '文件下载已开始');
+                showResult('danger', '保存失败：' + data.message);
             }
-        } catch (err) { showResult('danger', '生成失败：' + err.message); }
-        finally {
-            generateBtn.disabled = false;
-            generateBtn.innerHTML = '<i class="fa fa-play me-2"></i>生成数据';
+        } catch (err) {
+            showResult('danger', '保存失败：网络错误');
         }
-    });
+    }
 
-    // ========== 因子库管理 ==========
-    function loadCustomLibraries() {
-        const stored = localStorage.getItem(CUSTOM_LIB_KEY);
-        if (stored) {
-            try { customLibraries = JSON.parse(stored); } catch(e) { customLibraries = []; }
-        } else {
+    async function loadConfig() {
+        try {
+            const res = await fetch('/simulate/api/load_config', {
+                headers: { 'X-CSRFToken': csrf_token }
+            });
+            const data = await res.json();
+            if (data.status === 'success' && data.config) {
+                const saved = data.config;
+                if (saved.version === 2) {
+                    selectedCtqIds = saved.selectedCtqIds || [];
+                    ctqFeatures = saved.ctqFeatures || {};
+                    ctqFormulas = saved.ctqFormulas || {};
+                    ctqForceCpk = saved.ctqForceCpk || {};
+                    renderCtqSelector();
+                    showResult('success', '配置加载成功');
+                } else {
+                    showResult('danger', '配置版本不兼容');
+                }
+            } else {
+                showResult('warning', '未找到已保存的配置');
+            }
+        } catch (err) {
+            showResult('danger', '加载失败：网络错误');
+        }
+    }
+
+    // ========== 因子库管理（服务器端） ==========
+    async function loadCustomLibraries() {
+        try {
+            const res = await fetch('/simulate/api/load_libraries', {
+                headers: { 'X-CSRFToken': csrf_token }
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                customLibraries = data.libraries || [];
+            } else {
+                customLibraries = [];
+            }
+        } catch (err) {
+            console.error('加载因子库失败', err);
             customLibraries = [];
         }
     }
 
-    function saveCustomLibraries() {
-        localStorage.setItem(CUSTOM_LIB_KEY, JSON.stringify(customLibraries));
+    async function saveCustomLibraries() {
+        try {
+            const res = await fetch('/simulate/api/save_libraries', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf_token },
+                body: JSON.stringify({ libraries: customLibraries })
+            });
+            const data = await res.json();
+            if (data.status !== 'success') {
+                console.warn('保存因子库失败', data.message);
+            }
+        } catch (err) {
+            console.error('保存因子库失败', err);
+        }
     }
 
-    function getAllLibraries() {
+    function renderFactorLibList() {
+        const container = document.getElementById('factorLibList');
         const presetList = Object.entries(factorLibrary).map(([key, lib]) => ({
             id: `preset_${key}`,
             name: key,
@@ -747,37 +790,48 @@
         }));
         const customList = customLibraries.map((lib, idx) => ({
             id: `custom_${idx}`,
-            ...lib,
+            customIdx: idx,
+            name: lib.name,
+            keyword: lib.keyword,
+            formula: lib.formula,
+            features: lib.features,
             isPreset: false
         }));
-        return [...presetList, ...customList];
-    }
+        const libraries = [...presetList, ...customList];
 
-    function renderFactorLibList() {
-        const container = document.getElementById('factorLibList');
-        const libraries = getAllLibraries();
         if (!libraries.length) {
             container.innerHTML = '<div class="col-12 text-muted">暂无因子库，点击“新建”添加</div>';
             return;
         }
+
         let html = '';
         libraries.forEach(lib => {
+            const libName = escapeHtml(lib.name);
+            const libKeyword = escapeHtml(lib.keyword);
+            const libFormulaPreview = escapeHtml((lib.formula || '').substring(0, 60));
+            let featuresJson = '[]';
+            try {
+                featuresJson = JSON.stringify(lib.features || []).replace(/'/g, "&#39;");
+            } catch(e) { console.error('序列化特征失败', e); }
+
             html += `
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100">
                         <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                            <strong>${escapeHtml(lib.name)}</strong>
+                            <strong>${libName}</strong>
                             ${lib.isPreset ? '<span class="badge bg-secondary">预置</span>' : ''}
                         </div>
                         <div class="card-body small">
-                            <div><strong>匹配关键词：</strong> ${escapeHtml(lib.keyword)}</div>
+                            <div><strong>匹配关键词：</strong> ${libKeyword}</div>
                             <div><strong>特征数：</strong> ${lib.features?.length || 0}</div>
-                            <div class="text-truncate"><strong>公式：</strong> ${escapeHtml(lib.formula?.substring(0, 60) || '')}...</div>
+                            <div class="text-truncate"><strong>公式：</strong> ${libFormulaPreview}...</div>
                         </div>
                         <div class="card-footer bg-transparent d-flex justify-content-between">
-                            <button class="btn btn-sm btn-outline-primary use-lib-btn" data-lib='${JSON.stringify(lib)}'><i class="fa fa-upload"></i> 导入当前CTQ</button>
-                            ${!lib.isPreset ? `<button class="btn btn-sm btn-outline-secondary edit-lib-btn" data-lib='${JSON.stringify(lib)}'><i class="fa fa-edit"></i> 编辑</button>
-                            <button class="btn btn-sm btn-outline-danger delete-lib-btn" data-id="${lib.id}"><i class="fa fa-trash"></i> 删除</button>` : ''}
+                            <button class="btn btn-sm btn-outline-primary use-lib-btn" data-name="${lib.name}" data-keyword="${lib.keyword}" data-formula="${escapeHtml(lib.formula || '')}" data-features='${featuresJson}'><i class="fa fa-upload"></i> 导入当前CTQ</button>
+                            ${!lib.isPreset ? `
+                                <button class="btn btn-sm btn-outline-secondary edit-lib-btn" data-custom-idx="${lib.customIdx}"><i class="fa fa-edit"></i> 编辑</button>
+                                <button class="btn btn-sm btn-outline-danger delete-lib-btn" data-custom-idx="${lib.customIdx}"><i class="fa fa-trash"></i> 删除</button>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -787,48 +841,69 @@
 
         document.querySelectorAll('.use-lib-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const lib = JSON.parse(btn.dataset.lib);
-                importLibraryToCurrentCtq(lib);
+                const libData = {
+                    name: btn.dataset.name,
+                    keyword: btn.dataset.keyword,
+                    formula: btn.dataset.formula,
+                    features: (() => {
+                        try {
+                            return JSON.parse(btn.dataset.features);
+                        } catch(e) {
+                            console.error('解析特征数据失败', e);
+                            return [];
+                        }
+                    })()
+                };
+                importLibraryToCurrentCtq(libData);
                 bootstrap.Modal.getInstance(document.getElementById('factorLibModal')).hide();
             });
         });
+
         document.querySelectorAll('.edit-lib-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const lib = JSON.parse(btn.dataset.lib);
-                openEditLibModal(lib);
+                const customIdx = parseInt(btn.dataset.customIdx);
+                const lib = customLibraries[customIdx];
+                if (lib) {
+                    openEditLibModal(lib, customIdx);
+                } else {
+                    alert('找不到该因子库');
+                }
             });
         });
+
         document.querySelectorAll('.delete-lib-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.dataset.id;
+            btn.addEventListener('click', async () => {
+                const customIdx = parseInt(btn.dataset.customIdx);
                 if (confirm('确定删除该因子库吗？')) {
-                    const idx = customLibraries.findIndex(l => `custom_${customLibraries.indexOf(l)}` === id);
-                    if (idx !== -1) {
-                        customLibraries.splice(idx, 1);
-                        saveCustomLibraries();
-                        renderFactorLibList();
-                    }
+                    customLibraries.splice(customIdx, 1);
+                    await saveCustomLibraries();
+                    renderFactorLibList();
+                    showResult('success', '因子库已删除');
                 }
             });
         });
     }
 
-    let editingLibIndex = -1;
-    function openEditLibModal(lib = null) {
+    let editingLibIdx = -1;
+    function openEditLibModal(lib = null, idx = -1) {
         const modal = new bootstrap.Modal(document.getElementById('editLibModal'));
         document.getElementById('libFeaturesContainer').innerHTML = '';
+
         if (lib && !lib.isPreset) {
-            editingLibIndex = customLibraries.findIndex(l => l.name === lib.name && l.keyword === lib.keyword);
+            editingLibIdx = idx;
             document.getElementById('libName').value = lib.name;
-            document.getElementById('libKeyword').value = lib.keyword;
-            document.getElementById('libFormula').value = lib.formula;
-            if (lib.features) {
+            document.getElementById('libKeyword').value = lib.keyword || lib.name;
+            document.getElementById('libFormula').value = lib.formula || '';
+            if (lib.features && lib.features.length) {
                 lib.features.forEach(feat => addFeatureToLibForm(feat));
             }
             document.getElementById('editLibTitle').innerText = '编辑因子库';
         } else {
-            editingLibIndex = -1;
+            editingLibIdx = -1;
             document.getElementById('editLibTitle').innerText = '新建因子库';
+            document.getElementById('libName').value = '';
+            document.getElementById('libKeyword').value = '';
+            document.getElementById('libFormula').value = '';
             addFeatureToLibForm(null);
         }
         modal.show();
@@ -900,18 +975,20 @@
         div.querySelector('.remove-feature-btn').addEventListener('click', () => div.remove());
     }
 
-    function saveCurrentLibrary() {
+    async function saveCurrentLibrary() {
         const name = document.getElementById('libName').value.trim();
         if (!name) { alert('请输入因子库名称'); return; }
         const keyword = document.getElementById('libKeyword').value.trim() || name;
         const formula = document.getElementById('libFormula').value.trim();
         const features = [];
+
         document.querySelectorAll('#libFeaturesContainer .modal-feature-item').forEach(div => {
             const nameInput = div.querySelector('input[placeholder="特征名"]');
             const featName = nameInput?.value.trim();
             if (!featName) return;
             const type = div.querySelector('.feature-type').value;
             const featObj = { name: featName, type: type };
+
             if (type === 'numeric') {
                 const distSelect = div.querySelector('.dist-type');
                 const paramInput = div.querySelector('.param-input');
@@ -926,18 +1003,23 @@
                     featObj.normalParams = paramValue;
                 }
             } else {
-                featObj.catWeights = div.querySelector('.categorical-params input')?.value.trim() || '';
+                const catInput = div.querySelector('.categorical-params input');
+                featObj.catWeights = catInput?.value.trim() || '';
             }
             features.push(featObj);
         });
+
         if (features.length === 0) { alert('至少需要一个特征'); return; }
+
         const newLib = { name, keyword, formula, features };
-        if (editingLibIndex >= 0) {
-            customLibraries[editingLibIndex] = newLib;
+
+        if (editingLibIdx >= 0 && editingLibIdx < customLibraries.length) {
+            customLibraries[editingLibIdx] = newLib;
         } else {
             customLibraries.push(newLib);
         }
-        saveCustomLibraries();
+
+        await saveCustomLibraries();
         bootstrap.Modal.getInstance(document.getElementById('editLibModal')).hide();
         renderFactorLibList();
         alert('因子库保存成功');
@@ -958,24 +1040,90 @@
             targetCtqId = parseInt(choice);
             if (!selected.find(c => c.ctq_id === targetCtqId)) { alert('无效ID'); return; }
         }
-        const features = lib.features.map(f => {
+
+        const features = (lib.features || []).map(f => {
             const base = { name: f.name, type: f.type };
             if (f.type === 'numeric') {
                 base.distribution = f.distribution || 'normal';
-                if (base.distribution === 'normal') base.normalParams = f.normalParams || '0,1';
-                else if (base.distribution === 'uniform') base.uniformRange = f.uniformRange || '0,1';
-                else if (base.distribution === 'lognormal') base.normalParams = f.normalParams || '1,0.5';
+                if (base.distribution === 'normal') {
+                    base.normalParams = f.normalParams || (f.mean !== undefined ? `${f.mean},${f.std || 1}` : '0,1');
+                } else if (base.distribution === 'uniform') {
+                    base.uniformRange = f.uniformRange || (f.min !== undefined ? `${f.min},${f.max || 1}` : '0,1');
+                } else if (base.distribution === 'lognormal') {
+                    base.normalParams = f.normalParams || (f.mean !== undefined ? `${f.mean},${f.std || 0.5}` : '1,0.5');
+                }
             } else {
                 base.catWeights = f.catWeights || '';
             }
             return base;
         });
+
         ctqFeatures[targetCtqId] = features;
-        ctqFormulas[targetCtqId] = lib.formula;
+        ctqFormulas[targetCtqId] = lib.formula || '';
         ctqForceCpk[targetCtqId] = { enabled: false, target_cpk: 1.33, noise_std: 0 };
         renderCtqCards();
         alert(`已导入因子库「${lib.name}」到CTQ ID ${targetCtqId}`);
     }
+
+    // ========== 表单提交（生成数据） ==========
+    document.getElementById('simulateForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        document.querySelectorAll('.ctq-card').forEach(card => {
+            const ctqId = parseInt(card.dataset.ctqId);
+            const formulaInput = card.querySelector('.ctq-formula');
+            if (formulaInput) {
+                ctqFormulas[ctqId] = formulaInput.value;
+            }
+        });
+
+        const config = collectConfig();
+        if (!config.ctq_ids.length) {
+            alert('请至少选择一个CTQ');
+            return;
+        }
+
+        const generateBtn = document.getElementById('generateBtn');
+        const originalText = generateBtn.innerHTML;
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>生成中...';
+
+        try {
+            const res = await fetch('/simulate/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf_token },
+                body: JSON.stringify(config)
+            });
+
+            if (config.auto_import) {
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showResult('success', data.message);
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    throw new Error(data.error || '导入失败');
+                }
+            } else {
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                a.download = `mock_data_${timestamp}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showResult('success', '文件下载已开始，请检查浏览器下载文件夹');
+            }
+        } catch (err) {
+            console.error('生成失败:', err);
+            showResult('danger', '生成失败：' + err.message);
+        } finally {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = originalText;
+        }
+    });
 
     // ========== 页面初始化 ==========
     document.getElementById('saveConfigBtn').addEventListener('click', saveConfig);
@@ -989,7 +1137,6 @@
     document.getElementById('saveLibBtn').addEventListener('click', saveCurrentLibrary);
     document.getElementById('addFeatureBtn').addEventListener('click', () => addFeatureToLibForm(null));
 
-    // 导入模式联动
     const autoImportCheck = document.getElementById('autoImport');
     const importModeSelect = document.getElementById('importMode');
     autoImportCheck.addEventListener('change', function() {
@@ -997,11 +1144,30 @@
     });
     importModeSelect.disabled = !autoImportCheck.checked;
 
-    loadCustomLibraries();
-    (function autoLoad() {
-        if (localStorage.getItem(STORAGE_KEY) && confirm('检测到之前保存的配置，是否加载？')) {
-            loadConfig();
-        } else {
+    (async function autoLoad() {
+        await loadCustomLibraries();
+        try {
+            const res = await fetch('/simulate/api/load_config', {
+                headers: { 'X-CSRFToken': csrf_token }
+            });
+            const data = await res.json();
+            if (data.status === 'success' && data.config) {
+                const saved = data.config;
+                if (saved.version === 2) {
+                    selectedCtqIds = saved.selectedCtqIds || [];
+                    ctqFeatures = saved.ctqFeatures || {};
+                    ctqFormulas = saved.ctqFormulas || {};
+                    ctqForceCpk = saved.ctqForceCpk || {};
+                    renderCtqSelector();
+                    console.log('配置已自动加载');
+                } else {
+                    renderCtqSelector();
+                }
+            } else {
+                renderCtqSelector();
+            }
+        } catch (err) {
+            console.error('加载配置失败', err);
             renderCtqSelector();
         }
     })();
