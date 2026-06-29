@@ -10,6 +10,7 @@ from routes.help import help_bp
 from routes.spc_page import spc_bp
 from routes.influence import influence_bp
 from routes.ml_tool import ml_tool_bp   # 新增导入
+from routes.feature_monitor import feature_monitor_bp
 from routes.simulate import simulate_bp
 def register_blueprints(app):
     app.register_blueprint(dashboard_bp)
@@ -24,3 +25,4 @@ def register_blueprints(app):
     app.register_blueprint(influence_bp)
     app.register_blueprint(ml_tool_bp)   # 新增注册
     app.register_blueprint(simulate_bp)
+    app.register_blueprint(feature_monitor_bp)

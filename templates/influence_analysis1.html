@@ -1,0 +1,559 @@
+{% extends "base.html" %}
+{% block title %}CTQ影响因素分析 - {{ ctq.ctq_name }}{% endblock %}
+{% block extra_css %}
+<style>
+    .analysis-container {
+        padding: 0 1.5rem;
+    }
+    @media (min-width: 768px) {
+        .analysis-container { padding: 0 2rem; }
+    }
+    @media (min-width: 1400px) {
+        .analysis-container { padding: 0 2.5rem; }
+    }
+
+    .analysis-header {
+        background: #fff;
+        border-radius: var(--radius);
+        padding: 1rem 1.5rem;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 1.5rem;
+    }
+
+    .card {
+        border: none;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        background: #fff;
+        margin-bottom: 1.2rem;
+    }
+    .card-header {
+        background: transparent;
+        border-bottom: 1px solid var(--border);
+        font-weight: 600;
+        color: var(--text);
+        padding: 0.8rem 1.2rem;
+    }
+    .card-body {
+        padding: 1rem 1.2rem;
+    }
+
+    .upload-card .card-body {
+        background: #f8faff;
+    }
+
+    .feature-list {
+        max-height: 320px;
+        overflow-y: auto;
+    }
+    .feature-list .list-group-item {
+        border: none;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.875rem;
+        padding: 0.6rem 1rem;
+    }
+    .feature-badge {
+        background: var(--primary-bg);
+        color: var(--primary);
+        font-weight: 500;
+    }
+
+    .chart-container {
+        height: 380px;
+        width: 100%;
+        background: #fff;
+        border-radius: 12px;
+        padding: 4px;
+    }
+
+    .advanced-toggle {
+        color: var(--primary);
+        font-weight: 500;
+    }
+
+    @media (max-width: 768px) {
+        .analysis-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="analysis-container mt-2">
+    <div class="analysis-header d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="fw-bold mb-1" style="font-size: 1.6rem; color: var(--text);">
+                <i class="fa fa-bar-chart me-2" style="color: var(--primary);"></i>{{ ctq.ctq_name }} 影响因素分析
+            </h4>
+            <span class="badge-item mt-1 d-inline-block" style="background: var(--primary-bg); color: var(--primary); font-weight:500; padding: 0.35rem 0.8rem; border-radius:20px;">
+                <i class="fa fa-tag me-1"></i>品项: {{ product_item or '通用' }}
+            </span>
+        </div>
+        <a href="{{ url_for('ctq.ctq_list') }}" class="btn btn-outline-primary btn-sm">
+            <i class="fa fa-arrow-left me-1"></i>返回CTQ管理
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card upload-card">
+                <div class="card-header"><i class="fa fa-upload me-2" style="color:var(--primary);"></i>特征数据上传</div>
+                <div class="card-body">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <div class="mb-2">
+                            <input type="file" class="form-control form-control-sm" id="featureFile" accept=".xlsx,.xls,.csv" required onchange="checkFileSize(this)">
+                            <div class="form-text small" style="color: var(--text-muted);">
+                                <i class="fa fa-info-circle me-1"></i>必需列：batch_no, ctq_name, feature_name, feature_value
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm w-100"><i class="fa fa-cloud-upload me-1"></i>上传Excel</button>
+                    </form>
+                    <button id="clearFeaturesBtn" class="btn btn-outline-danger btn-sm mt-2 w-100">
+                        <i class="fa fa-trash me-1"></i> 清空当前特征数据
+                    </button>
+                    <div id="uploadResult" class="mt-2"></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><i class="fa fa-list-ul me-2" style="color:var(--primary);"></i>已有特征清单</div>
+                <div class="card-body feature-list p-0" id="featureList">
+                    <div class="text-muted small text-center py-3">加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header"><i class="fa fa-cogs me-2" style="color:var(--primary);"></i>模型训练</div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="small fw-bold text-secondary">选择模型算法</label>
+                            <select id="modelTypeSelect" class="form-select form-select-sm"></select>
+                            <div id="modelLoadError" class="text-danger small mt-1" style="display:none;">模型列表加载失败，请检查数据库</div>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <button id="trainBtn" class="btn btn-primary btn-sm w-100"><i class="fa fa-play me-1"></i>开始训练</button>
+                        </div>
+                    </div>
+                    <div id="trainProgress" class="mt-2" style="display:none;">
+                        <div class="progress"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%">训练中...</div></div>
+                    </div>
+                    <div class="mt-2">
+                        <a class="text-decoration-none small advanced-toggle" data-bs-toggle="collapse" href="#advancedParams" role="button">
+                            <i class="fa fa-sliders me-1"></i>高级参数配置（可选）
+                        </a>
+                        <div class="collapse mt-2" id="advancedParams">
+                            <div class="card card-body bg-light p-2" style="border-radius:10px;">
+                                <div class="row g-2">
+                                    <div class="col-4"><label class="small">缺失值填充</label><select id="missingMethod" class="form-select form-select-sm"><option value="median">中位数</option><option value="mean">均值</option><option value="mode">众数</option><option value="drop">删除行</option></select></div>
+                                    <div class="col-4"><label class="small">标准化</label><select id="scaler" class="form-select form-select-sm"><option value="none">无</option><option value="standard">Standard</option><option value="minmax">MinMax</option><option value="robust">Robust</option></select></div>
+                                    <div class="col-4"><label class="small">交叉验证</label><select id="useCV" class="form-select form-select-sm"><option value="true">启用</option><option value="false">禁用</option></select></div>
+                                    <div class="col-4"><label class="small">CV折数</label><input type="number" id="cvFolds" class="form-control form-control-sm" value="5" min="3" max="10"></div>
+                                    <div class="col-8"><div class="form-check form-switch mt-2"><input class="form-check-input" type="checkbox" id="autoTune"><label class="form-check-label small">自动超参数调优</label></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><i class="fa fa-line-chart me-2" style="color:var(--primary);"></i>模型性能对比</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0" id="modelTable">
+                            <thead><tr><th>模型</th><th>训练时间</th><th>R²</th><th>RMSE</th><th>操作</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-2">
+        <div class="card-header"><i class="fa fa-star me-2" style="color:var(--primary);"></i>特征重要性（模型全局贡献）</div>
+        <div class="card-body p-1">
+            <div id="importanceChart" style="height:400px;"></div>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mt-3" id="advancedTabs" role="tablist">
+        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tabSHAP"><i class="fa fa-magic me-1"></i>SHAP摘要</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabPDP"><i class="fa fa-line-chart me-1"></i>部分依赖</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabDiagnostics"><i class="fa fa-stethoscope me-1"></i>模型诊断</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabCorrelation"><i class="fa fa-th me-1"></i>相关性热力图</a></li>
+    </ul>
+    <div class="tab-content mt-2">
+        <div class="tab-pane fade show active" id="tabSHAP">
+            <div class="card">
+                <div class="card-body p-1">
+                    <div id="shapChart" class="chart-container"></div>
+                    <div class="text-muted small mt-1 text-center"><i class="fa fa-info-circle me-1"></i>红色正向贡献，蓝色负向贡献</div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="tabPDP">
+            <div class="card">
+                <div class="card-body p-1">
+                    <div class="row mb-2"><div class="col-md-4"><label class="small">选择特征</label><select id="pdpFeatureSelect" class="form-select form-select-sm"></select></div></div>
+                    <div id="pdpChart" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="tabDiagnostics">
+            <div class="card">
+                <div class="card-body p-1">
+                    <div class="row">
+                        <div class="col-md-6"><div id="actualVsPredChart" class="chart-container" style="height:320px;"></div><div class="text-center small mt-1">实际值 vs 预测值</div></div>
+                        <div class="col-md-6"><div id="residualChart" class="chart-container" style="height:320px;"></div><div class="text-center small mt-1">残差 vs 预测值</div></div>
+                    </div>
+                    <div id="diagnosticsMetrics" class="metrics-box text-center"></div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="tabCorrelation">
+            <div class="card">
+                <div class="card-body p-1">
+                    <div id="corrChart" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script>
+/* ========== 工具函数 ========== */
+function checkFileSize(input) { if(input.files[0] && input.files[0].size>20*1024*1024){alert('文件大小不能超过20MB');input.value='';} }
+const ctqId = {{ ctq.ctq_id }}; const productItem = "{{ product_item }}"; const csrfToken = "{{ csrf_token() }}";
+let currentModelType=null,shapChart=null,pdpChart=null,actualVsPredChart=null,residualChart=null,corrChart=null;
+
+function sciFormatter(v){ if(v===undefined||v===null)return''; if(Math.abs(v)>=1e6||(Math.abs(v)<0.1&&v!==0))return v.toExponential(2); return v.toFixed(2); }
+
+document.querySelectorAll('#advancedTabs a[data-bs-toggle="tab"]').forEach(el=>{
+    el.addEventListener('shown.bs.tab', e => {
+        let id = e.target.getAttribute('href').replace('#','');
+        if (id === 'tabSHAP' && shapChart) shapChart.resize();
+        if (id === 'tabPDP' && pdpChart) pdpChart.resize();
+        if (id === 'tabDiagnostics') {
+            if (actualVsPredChart) actualVsPredChart.resize();
+            if (residualChart) residualChart.resize();
+        }
+        if (id === 'tabCorrelation' && corrChart) corrChart.resize();
+    });
+});
+
+/* ========== 模型类型加载 ========== */
+async function loadModelTypes(){
+    try{
+        let res = await fetch('/influence/api/model_types', {headers:{'X-CSRFToken':csrfToken}});
+        let data = await res.json();
+        let html = ''; data.forEach(m => html += `<option value="${m.key}">${m.name}</option>`);
+        document.getElementById('modelTypeSelect').innerHTML = html;
+        document.getElementById('modelLoadError').style.display = data.length===0 ? 'block' : 'none';
+    }catch(e){ document.getElementById('modelLoadError').style.display='block'; }
+}
+
+/* ========== 特征上传与列表 ========== */
+document.getElementById('uploadForm').onsubmit = async e => {
+    e.preventDefault(); let file = document.getElementById('featureFile').files[0]; if(!file) return;
+    let fd = new FormData(); fd.append('file', file);
+    let res = await fetch('/influence/api/feature_upload', {method:'POST', body:fd, headers:{'X-CSRFToken':csrfToken}});
+    let r = await res.json();
+    if (res.ok) {
+        document.getElementById('uploadResult').innerHTML = `<div class="alert alert-success py-1 small">${r.message}</div>`;
+        loadFeatureList();
+    } else {
+        document.getElementById('uploadResult').innerHTML = `<div class="alert alert-danger py-1 small">${r.error}<br>${r.details?.join('<br>')||''}</div>`;
+    }
+};
+async function loadFeatureList(){
+    let res = await fetch(`/influence/api/features/${ctqId}?product_item=${encodeURIComponent(productItem)}`);
+    let data = await res.json();
+    let html = '<ul class="list-group list-group-flush">';
+    if (data.features?.length) {
+        data.features.forEach(f => {
+            html += `<li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                <span class="small fw-bold">${f.name}</span>
+                <span class="badge feature-badge" style="cursor:pointer" onclick="editFeatureType('${f.name}','${f.type}')">${f.type}</span>
+                <span class="badge bg-info ms-1">${f.batch_count}批次</span></li>`;
+        });
+    } else {
+        html += '<li class="list-group-item text-muted small">暂无特征数据</li>';
+    }
+    html += '</ul>'; document.getElementById('featureList').innerHTML = html;
+}
+async function editFeatureType(n,t){
+    let np = prompt(`修改 ${n} 的类型 (numeric/categorical)`, t);
+    if (np && (np==='numeric'||np==='categorical')) {
+        let r = await fetch(`/influence/api/feature_type/${ctqId}`, {
+            method:'POST',
+            headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken},
+            body:JSON.stringify({feature_name:n, feature_type:np})
+        });
+        let d = await r.json();
+        if (d.success) loadFeatureList(); else alert(d.error);
+    } else if (np) alert('只能是 numeric 或 categorical');
+}
+
+/* ========== 模型列表及重要性展示 ========== */
+async function loadModels(){
+    let res = await fetch(`/influence/api/models/${ctqId}?product_item=${encodeURIComponent(productItem)}`);
+    let models = await res.json(); let tb = document.querySelector('#modelTable tbody'); tb.innerHTML='';
+    if (!models.length) { tb.innerHTML = '<tr><td colspan="5" class="text-center small">暂无模型</td></tr>'; return; }
+    models.forEach(m => {
+        let r = tb.insertRow(); r.insertCell(0).innerText = m.model_type;
+        r.insertCell(1).innerText = new Date(m.training_date).toLocaleString();
+        r.insertCell(2).innerText = m.r2?.toFixed(4) || '-';
+        r.insertCell(3).innerText = m.rmse?.toExponential(4) || '-';
+        let c = r.insertCell(4); let btn = document.createElement('button');
+        btn.className = 'btn btn-sm btn-outline-info'; btn.innerText = '查看重要性';
+        btn.onclick = () => showImportance(m.model_type);
+        c.appendChild(btn);
+    });
+}
+async function showImportance(mt){
+    currentModelType = mt;
+    let res = await fetch(`/influence/api/importance/${ctqId}/${mt}?product_item=${encodeURIComponent(productItem)}`);
+    let d = await res.json();
+    if (d.error) { alert(d.error); return; }
+    drawImportanceChart(d.features, d.scores);
+    await loadSHAPSummary(mt);
+    await loadDiagnostics(mt);
+    await loadCorrelation();
+    await loadPDPFeatureSelect(mt);
+}
+function drawImportanceChart(fs, sc){
+    let dom = document.getElementById('importanceChart');
+    if (echarts.getInstanceByDom(dom)) echarts.dispose(dom);
+    let ch = echarts.init(dom);
+    ch.setOption({
+        color: ['#6366f1'],
+        tooltip: { trigger:'axis', axisPointer:{type:'shadow'}, formatter: p => `${p[0].name}: ${p[0].value.toFixed(4)}` },
+        grid: { containLabel: true, left: '12%' },
+        xAxis: { type:'value', name:'重要性' },
+        yAxis: { type:'category', data:fs, name:'特征' },
+        series: [{ type:'bar', data:sc, itemStyle: { color: '#6366f1' }, label: { show:true, position:'right', formatter: v => v.data.toFixed(4) } }]
+    });
+}
+
+/* ========== SHAP 摘要图（修复版） ========== */
+async function loadSHAPSummary(mt){
+    let res = await fetch(`/influence/api/shap/${ctqId}/${mt}?product_item=${encodeURIComponent(productItem)}`);
+    let data = await res.json();
+    let dom = document.getElementById('shapChart');
+    if (data.error) { dom.innerHTML = `<div class="alert alert-danger small">${data.error}</div>`; return; }
+    if (!data.shap_data || data.shap_data.length === 0) {
+        dom.innerHTML = `<div class="alert alert-warning small">暂无SHAP数据</div>`;
+        return;
+    }
+
+    // 构建 points 和特征名列表
+    let points = [];
+    let featureNames = [];
+    data.shap_data.forEach((feat, idx) => {
+        if (!feat.values || feat.values.length === 0) return;
+        featureNames.push(feat.feature);
+        feat.values.forEach(v => {
+            if (isNaN(v)) return;
+            let jitter = (Math.random() - 0.5) * 0.6;
+            points.push({
+                x: v,
+                y: idx + jitter,
+                featureName: feat.feature,
+                shapValue: v
+            });
+        });
+    });
+
+    if (points.length === 0) {
+        dom.innerHTML = `<div class="alert alert-warning small">SHAP值全为零或无效</div>`;
+        return;
+    }
+
+    if (shapChart) shapChart.dispose();
+    shapChart = echarts.init(dom);
+
+    let maxAbs = Math.max(...points.map(p => Math.abs(p.x)));
+    if (maxAbs === 0) maxAbs = 1;
+    // 关键修复：如果 SHAP 值绝对值太小，强制设置一个最小范围，避免颜色全白
+    if (maxAbs < 0.1) maxAbs = 0.1;
+
+    let visualMap = {
+        min: -maxAbs,
+        max: maxAbs,
+        calculable: true,
+        inRange: { color: ['#3b82f6', '#a855f7', '#ef4444'] },  // 蓝 -> 紫 -> 红，去掉白色
+        outOfRange: { color: '#94a3b8' }
+    };
+
+    shapChart.setOption({
+        tooltip: {
+            trigger: 'item',
+            formatter: function(params) {
+                let data = params.data;
+                return `<strong>${data.featureName}</strong><br/>SHAP值: ${data.shapValue.toFixed(4)}`;
+            }
+        },
+        xAxis: {
+            type: 'value',
+            name: 'SHAP值',
+            axisLabel: { formatter: sciFormatter },
+            splitLine: { lineStyle: { type: 'dashed' } }
+        },
+        yAxis: {
+            type: 'value',
+            name: '特征',
+            interval: 1,
+            min: -0.5,
+            max: featureNames.length - 0.5,
+            axisLabel: {
+                formatter: function(value) {
+                    let idx = Math.round(value);
+                    return featureNames[idx] || '';
+                }
+            },
+            axisTick: { show: false },
+            axisLine: { show: false },
+            splitLine: { show: false }
+        },
+        visualMap: visualMap,
+        series: [{
+            type: 'scatter',
+            data: points.map(p => ({ value: [p.x, p.y], featureName: p.featureName, shapValue: p.shapValue })),
+            symbolSize: 5,
+            itemStyle: { color: 'auto', opacity: 0.8 },
+            emphasis: { scale: 1.5 }
+        }]
+    });
+}
+
+/* ========== 部分依赖图（已修复横坐标） ========== */
+async function loadPDPFeatureSelect(mt){
+    let r = await fetch(`/influence/api/importance/${ctqId}/${mt}?product_item=${encodeURIComponent(productItem)}`);
+    let d = await r.json(); if (d.error) return;
+    let sel = document.getElementById('pdpFeatureSelect');
+    sel.innerHTML = '<option value="">请选择特征</option>';
+    d.features.forEach(f => sel.innerHTML += `<option value="${f}">${f}</option>`);
+    sel.onchange = () => { if (sel.value) loadPDP(mt, sel.value); };
+}
+async function loadPDP(mt, f){
+    let r = await fetch(`/influence/api/pdp/${ctqId}/${mt}?product_item=${encodeURIComponent(productItem)}&feature_name=${encodeURIComponent(f)}`);
+    let d = await r.json(); if (d.error) { alert(d.error); return; }
+    let dom = document.getElementById('pdpChart');
+    if (pdpChart) pdpChart.dispose(); pdpChart = echarts.init(dom);
+    let lineData = d.x.map((x, idx) => [x, d.y[idx]]);
+    pdpChart.setOption({
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'value', name: f, scale: true, axisLabel: { formatter: sciFormatter } },
+        yAxis: { type: 'value', name: '平均预测值', scale: true, axisLabel: { formatter: sciFormatter } },
+        series: [{
+            type: 'line',
+            data: lineData,
+            smooth: true,
+            lineStyle: { color: '#6366f1' },
+            symbol: 'circle',
+            symbolSize: 6
+        }]
+    });
+}
+
+/* ========== 模型诊断 ========== */
+async function loadDiagnostics(mt){
+    let r = await fetch(`/influence/api/diagnostics/${ctqId}/${mt}?product_item=${encodeURIComponent(productItem)}`);
+    let d = await r.json(); if (d.error) { alert(d.error); return; }
+    let va = [];
+    for (let i=0; i<d.actual.length; i++) { let a = d.actual[i], p = d.predicted[i], r = d.residuals[i]; if (isFinite(a) && isFinite(p) && isFinite(r)) va.push({a,p,r}); }
+    if (va.length === 0) { document.getElementById('diagnosticsMetrics').innerHTML = '<div class="alert alert-warning">无有效数据</div>'; return; }
+    let actual = va.map(v=>v.a), pred = va.map(v=>v.p), res = va.map(v=>v.r);
+    let dom1 = document.getElementById('actualVsPredChart'); if (actualVsPredChart) actualVsPredChart.dispose(); actualVsPredChart = echarts.init(dom1);
+    actualVsPredChart.setOption({
+        tooltip: { trigger: 'axis', formatter: p => `实际:${sciFormatter(p[0].value[0])}<br/>预测:${sciFormatter(p[0].value[1])}` },
+        xAxis: { name: '实际值', type: 'value', scale: true, axisLabel: { formatter: sciFormatter } },
+        yAxis: { name: '预测值', type: 'value', scale: true, axisLabel: { formatter: sciFormatter } },
+        series: [{ type: 'scatter', data: actual.map((a,i)=>[a,pred[i]]), symbolSize: 6, itemStyle: { color: '#6366f1' } }]
+    });
+    let dom2 = document.getElementById('residualChart'); if (residualChart) residualChart.dispose(); residualChart = echarts.init(dom2);
+    residualChart.setOption({
+        tooltip: { trigger: 'axis', formatter: p => `预测:${sciFormatter(p[0].value[0])}<br/>残差:${sciFormatter(p[0].value[1])}` },
+        xAxis: { name: '预测值', type: 'value', scale: true, axisLabel: { formatter: sciFormatter } },
+        yAxis: { name: '残差', type: 'value', scale: true, axisLabel: { formatter: sciFormatter } },
+        series: [{ type: 'scatter', data: pred.map((p,i)=>[p,res[i]]), symbolSize: 6, itemStyle: { color: '#ef4444' } }]
+    });
+    document.getElementById('diagnosticsMetrics').innerHTML = `R² = ${d.r2.toFixed(4)} &nbsp;|&nbsp; RMSE = ${sciFormatter(d.rmse)}`;
+}
+/* ========== 相关性热力图 ========== */
+async function loadCorrelation(){
+    let r = await fetch(`/influence/api/correlation/${ctqId}?product_item=${encodeURIComponent(productItem)}`);
+    let d = await r.json(); if (d.error) return;
+    let fs = d.features, hd = [];
+    for (let i=0; i<fs.length; i++) for (let j=0; j<fs.length; j++) hd.push([j, i, d.correlation[i][j]]);
+    let dom = document.getElementById('corrChart'); if (corrChart) corrChart.dispose(); corrChart = echarts.init(dom);
+    corrChart.setOption({
+        tooltip: { trigger: 'item', formatter: p => p.value[2].toFixed(4) },
+        xAxis: { type: 'category', data: fs, axisLabel: { rotate:45, interval:0, fontSize:9 } },
+        yAxis: { type: 'category', data: fs, axisLabel: { fontSize:9 } },
+        visualMap: { min:-1, max:1, calculable:true, inRange:{color:['#313695','#4575b4','#74add1','#abd9e9','#e0f3f8','#ffffbf','#fee090','#fdae61','#f46d43','#d73027','#a50026']} },
+        series: [{ type: 'heatmap', data: hd, label: { show:true, formatter: p => p.data[2].toFixed(2), fontSize:8 } }]
+    });
+}
+
+/* ========== 训练任务 ========== */
+document.getElementById('trainBtn').onclick = async () => {
+    let mt = document.getElementById('modelTypeSelect').value; if (!mt) { alert('请选择模型'); return; }
+    let cfg = {
+        missing_method: document.getElementById('missingMethod').value,
+        scaler: document.getElementById('scaler').value,
+        use_cv: document.getElementById('useCV').value === 'true',
+        cv_folds: parseInt(document.getElementById('cvFolds').value) || 5,
+        auto_tune: document.getElementById('autoTune').checked,
+        tune_method: 'grid',
+        param_grid: (() => {
+            let gs = {'lightgbm':{'n_estimators':[100,200],'learning_rate':[0.01,0.05,0.1],'num_leaves':[15,31,63]},'xgboost':{'n_estimators':[100,200],'learning_rate':[0.01,0.05,0.1],'max_depth':[3,5,7]},'random_forest':{'n_estimators':[100,200],'max_depth':[5,10,null],'min_samples_split':[2,5]},'decision_tree':{'max_depth':[3,5,7,null],'min_samples_split':[2,5]},'linear':{}}; return gs[mt] || {}; })()
+    };
+    document.getElementById('trainProgress').style.display = 'block';
+    try {
+        let res = await fetch(`/influence/api/train/${ctqId}`, {method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken},body:JSON.stringify({product_item:productItem,model_type:mt,hyperparams:{},training_config:cfg})});
+        let r = await res.json();
+        if (res.ok) {
+            let id = r.task_id, ival = setInterval(async () => {
+                let s = await fetch(`/influence/api/train_status/${id}`); let st = await s.json();
+                if (st.status === 'completed') { clearInterval(ival); document.getElementById('trainProgress').style.display = 'none'; alert('训练完成！'); loadModels(); if (st.result?.importance) drawImportanceChart(Object.keys(st.result.importance), Object.values(st.result.importance)); }
+                else if (st.status === 'failed') { clearInterval(ival); document.getElementById('trainProgress').style.display = 'none'; alert('训练失败：' + st.error); }
+                else { let txt = st.status === 'queued' ? '排队中...' : (st.status === 'loading' ? '加载数据...' : '训练中...'); let bar = document.querySelector('#trainProgress .progress-bar'); if (bar) { bar.style.width = '100%'; bar.innerHTML = txt; } }
+            }, 2000);
+        } else { alert(r.error || '请求失败'); document.getElementById('trainProgress').style.display = 'none'; }
+    } catch(e) { alert('网络错误'); document.getElementById('trainProgress').style.display = 'none'; }
+};
+
+/* ========== 清空特征数据 ========== */
+document.getElementById('clearFeaturesBtn').onclick = async function() {
+    if (!confirm('确定清空当前 CTQ 和品项下的所有特征数据吗？\n\n此操作不可恢复！')) {
+        return;
+    }
+    const url = `/influence/api/clear_features/${ctqId}?product_item=${encodeURIComponent(productItem)}`;
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        });
+        const result = await response.json();
+        if (result.success) {
+            alert(result.message);
+            loadFeatureList();
+        } else {
+            alert('清空失败：' + (result.error || '未知错误'));
+        }
+    } catch (err) {
+        alert('网络错误：' + err.message);
+    }
+};
+
+/* ========== 初始化 ========== */
+loadModelTypes(); loadFeatureList(); loadModels();
+</script>
+{% endblock %}

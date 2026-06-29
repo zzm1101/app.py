@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 import json
 from pathlib import Path
-
+from waitress import serve
 load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -156,4 +156,9 @@ if __name__ == "__main__":
     print("🔧 密封磨损监测系统入口：http://127.0.0.1:5000/seal")
     print("📈 模拟数据生成模块入口：http://127.0.0.1:5000/simulate")
     print("=" * 60)
-    app.run(debug=True, host="0.0.0.0", port=5001)
+
+    # 根据环境变量决定启动方式
+    if os.environ.get('USE_WAITRESS', '').lower() == 'true':
+        serve(app, host="0.0.0.0", port=5000)
+    else:
+        app.run(debug=True, host="0.0.0.0", port=5000)

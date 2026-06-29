@@ -1,0 +1,1009 @@
+{% extends "base.html" %}
+{% block title %}模拟数据生成器（专家版）{% endblock %}
+
+{% block extra_css %}
+<style>
+    .feature-card { background: #f8fafc; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; border: 1px solid #e2e8f0; }
+    .remove-feature { cursor: pointer; color: #ef4444; float: right; }
+    .ctq-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: #f9fafb;
+    }
+    .ctq-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.8rem;
+    }
+    .ctq-name { font-weight: bold; color: var(--primary); }
+    .feature-list { margin-top: 0.8rem; padding-left: 1rem; border-left: 2px solid #e2e8f0; }
+    .feature-item {
+        background: white;
+        border-radius: 8px;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    .add-feature-btn { font-size: 0.8rem; padding: 0.2rem 0.5rem; }
+    .ctq-selector {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #e2e8f0;
+        padding: 0.5rem;
+        border-radius: 8px;
+        background: #fff;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .ctq-selector .form-check { white-space: nowrap; }
+    .formula-config { background: #f1f5f9; border-radius: 8px; padding: 0.5rem; margin: 0.5rem 0; }
+    .formula-feedback { font-size: 0.7rem; }
+    .is-valid { border-color: #10b981 !important; background-image: none; }
+    .is-invalid { border-color: #ef4444 !important; background-image: none; }
+    .factor-import-btn { font-size: 0.75rem; padding: 0.1rem 0.4rem; }
+    .modal-feature-item {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        border: 1px solid #e2e8f0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fa fa-magic me-2"></i>模拟数据生成器（专家版）</h5>
+            <p class="mb-0 text-muted small">支持自定义因子库、公式模板、PPK强制、实时预览、配置持久化</p>
+        </div>
+        <div class="card-body">
+            <form id="simulateForm">
+                <div class="row mb-4">
+                    <div class="col-md-3"><label class="form-label">批次数量</label><input type="number" class="form-control" name="batch_count" value="100" min="1" max="500"></div>
+                    <div class="col-md-3"><label class="form-label">每批次每个CTQ样本数</label><input type="number" class="form-control" name="samples_per_batch" value="1" min="1" max="50">
+                        <div class="form-text text-muted small">建议设为1以对齐ML批次均值（设为1时CPK=PPK）</div>
+                    </div>
+                    <div class="col-md-3"><label class="form-label">起始日期</label><input type="date" class="form-control" name="start_date" value="2025-01-01"></div>
+                    <div class="col-md-3"><label class="form-label">随机种子</label><input type="number" class="form-control" name="random_seed"></div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-4"><label class="form-label">品项列表（逗号分隔）</label><input type="text" class="form-control" name="product_items_str" value="{{ product_items|join(',') }}"></div>
+                    <div class="col-md-4"><label class="form-label">生产线列表</label><input type="text" class="form-control" name="product_lines_str" value="利乐冠线,老酸奶线,小白袋线,1050大桶线"></div>
+                    <div class="col-md-4"><label class="form-label">班次列表</label><input type="text" class="form-control" name="shifts_str" value="生产甲班,生产乙班,生产丙班"></div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-3"><label class="form-label">批次产量最小值</label><input type="number" class="form-control" name="batch_qty_min" value="8000"></div>
+                    <div class="col-md-3"><label class="form-label">批次产量最大值</label><input type="number" class="form-control" name="batch_qty_max" value="12000"></div>
+                    <div class="col-md-3"><label class="form-label">异常值比例</label><input type="number" step="0.01" class="form-control" name="outlier_ratio" value="0.02"></div>
+                    <div class="col-md-3"><label class="form-label">默认PPK（无公式时）</label><input type="number" step="0.05" class="form-control" name="target_cpk" value="1.0"></div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-3"><label class="form-label">默认偏移倾向</label><input type="number" step="0.05" class="form-control" name="bias_tendency" value="0.0"></div>
+                    <div class="col-md-9">
+                        <label class="form-label">选择需要生成的 CTQ（可多选）</label>
+                        <div id="ctqSelector" class="ctq-selector"></div>
+                    </div>
+                </div>
+
+                <div id="ctqFeaturesContainer"></div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" name="auto_import" id="autoImport">
+                                <label class="form-check-label" for="autoImport">直接导入数据库</label>
+                            </div>
+                            <select class="form-select form-select-sm" id="importMode" style="width: auto;" disabled>
+                                <option value="replace">覆盖当前CTQ</option>
+                                <option value="append">追加到数据库</option>
+                                <option value="replace_all">覆盖全部模拟数据</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button type="button" class="btn btn-outline-secondary me-2" id="saveConfigBtn"><i class="fa fa-save me-1"></i>保存配置</button>
+                        <button type="button" class="btn btn-outline-secondary me-2" id="loadConfigBtn"><i class="fa fa-folder-open me-1"></i>加载配置</button>
+                        <button type="button" class="btn btn-outline-info me-2" id="manageFactorLibBtn"><i class="fa fa-database"></i> 因子库管理</button>
+                        <button type="button" class="btn btn-info me-2" id="previewBtn"><i class="fa fa-eye me-1"></i>实时预览</button>
+                        <button type="submit" class="btn btn-primary" id="generateBtn"><i class="fa fa-play me-2"></i>生成数据</button>
+                    </div>
+                </div>
+            </form>
+            <div id="previewResult" class="alert alert-info" style="display:none;"></div>
+            <div id="resultMsg" class="alert" style="display:none;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 因子库管理模态框 -->
+<div class="modal fade" id="factorLibModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa fa-database me-2"></i>因子库管理</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-between mb-3">
+                    <div>
+                        <button class="btn btn-sm btn-primary" id="addLibBtn"><i class="fa fa-plus"></i> 新建因子库</button>
+                        <span class="text-muted small ms-2">提示：预置库为只读，自定义库可编辑/删除</span>
+                    </div>
+                </div>
+                <div id="factorLibList" class="row g-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑因子库模态框 -->
+<div class="modal fade" id="editLibModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editLibTitle">编辑因子库</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editLibForm">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">因子库名称</label>
+                            <input type="text" class="form-control" id="libName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">匹配关键词（用于自动匹配CTQ）</label>
+                            <input type="text" class="form-control" id="libKeyword" placeholder="如：双歧杆菌">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">公式模板</label>
+                        <textarea class="form-control" id="libFormula" rows="3" placeholder="例如: 10 ** (7.0 + 0.15*(初始添加量_log-7) ...)"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">特征列表</label>
+                        <div id="libFeaturesContainer"></div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addFeatureBtn"><i class="fa fa-plus"></i> 添加特征</button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="saveLibBtn">保存因子库</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ========== 全局变量 ==========
+    const allCtqs = {{ ctqs_json | safe }};
+    const factorLibrary = {{ factor_library | safe }};
+    let selectedCtqIds = [];
+    let ctqFeatures = {};
+    let ctqFormulas = {};
+    let ctqForceCpk = {};
+
+    const STORAGE_KEY = 'simulate_config_v2';
+    const CUSTOM_LIB_KEY = 'custom_factor_libraries';
+    let customLibraries = [];
+
+    // ========== 工具函数 ==========
+    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+
+    function validateFormula(formula, availableFeatures) {
+        if (!formula.trim()) return { valid: true, message: '' };
+        const dangerous = ['__', 'import', 'exec', 'eval', 'open', 'file', 'system', 'subprocess', 'os.', 'sys.'];
+        for (let kw of dangerous) if (formula.toLowerCase().includes(kw)) return { valid: false, message: `公式包含非法关键字: ${kw}` };
+        let stack = 0;
+        for (let ch of formula) { if (ch === '(') stack++; if (ch === ')') stack--; if (stack < 0) return { valid: false, message: '括号不匹配' }; }
+        if (stack !== 0) return { valid: false, message: '括号未闭合' };
+        const identifiers = formula.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || [];
+        const allowedFunctions = ['sin', 'cos', 'tan', 'exp', 'log', 'log10', 'sqrt', 'abs', 'pow'];
+        const missingVars = [];
+        for (let id of identifiers) {
+            if (allowedFunctions.includes(id)) continue;
+            if (!availableFeatures.includes(id) && !/^\d+$/.test(id)) {
+                missingVars.push(id);
+            }
+        }
+        if (missingVars.length) {
+            return { valid: false, message: `未知变量: ${missingVars.join(', ')}。可用特征: ${availableFeatures.join(', ') || '无'}` };
+        }
+        try {
+            new Function(...availableFeatures, `"use strict"; return (${formula});`)(...availableFeatures.map(() => 0));
+            return { valid: true, message: '' };
+        } catch (e) {
+            return { valid: false, message: `语法错误: ${e.message}` };
+        }
+    }
+
+    // ========== CTQ 选择渲染 ==========
+    function renderCtqSelector() {
+        const container = document.getElementById('ctqSelector');
+        container.innerHTML = '';
+        allCtqs.forEach(ctq => {
+            const display = ctq.product_item ? `${ctq.product_item} - ${ctq.ctq_name}` : `通用 - ${ctq.ctq_name}`;
+            const div = document.createElement('div');
+            div.className = 'form-check';
+            div.innerHTML = `<input class="form-check-input ctq-checkbox" type="checkbox" value="${ctq.ctq_id}" id="sel_${ctq.ctq_id}" ${selectedCtqIds.includes(ctq.ctq_id) ? 'checked' : ''}><label class="form-check-label" for="sel_${ctq.ctq_id}">${escapeHtml(display)}</label>`;
+            container.appendChild(div);
+        });
+        container.addEventListener('change', (e) => {
+            if (e.target.classList.contains('ctq-checkbox')) {
+                selectedCtqIds = Array.from(document.querySelectorAll('.ctq-checkbox:checked')).map(cb => parseInt(cb.value));
+                renderCtqCards();
+            }
+        });
+        renderCtqCards();
+    }
+
+    // ========== 特征管理（动态） ==========
+    function addFeatureForCtq(ctqId) {
+        if (!ctqFeatures[ctqId]) ctqFeatures[ctqId] = [];
+        ctqFeatures[ctqId].push({
+            name: '', type: 'numeric', distribution: 'normal',
+            normalParams: '0,1', uniformRange: '0,100', catWeights: ''
+        });
+        refreshFeatureList(ctqId);
+    }
+
+    function refreshFeatureList(ctqId) {
+        const container = document.getElementById(`featureList_${ctqId}`);
+        if (!container) return;
+        const features = ctqFeatures[ctqId] || [];
+        if (!features.length) { container.innerHTML = '<div class="text-muted small">暂无特征，点击上方按钮添加</div>'; return; }
+        let html = '';
+        features.forEach((feat, idx) => {
+            html += `<div class="feature-item" data-idx="${idx}">
+                <div style="flex:2"><input type="text" class="form-control form-control-sm" placeholder="特征名" value="${escapeHtml(feat.name)}" data-field="name"></div>
+                <div style="flex:1"><select class="form-select form-select-sm feature-type" data-field="type"><option value="numeric" ${feat.type === 'numeric' ? 'selected' : ''}>数值型</option><option value="categorical" ${feat.type === 'categorical' ? 'selected' : ''}>分类型</option></select></div>
+                <div style="flex:3" id="detail_${ctqId}_${idx}"></div>
+                <div style="flex:0"><i class="fa fa-trash-o remove-feature" data-idx="${idx}" style="cursor:pointer; color:#ef4444;"></i></div>
+            </div>`;
+        });
+        container.innerHTML = html;
+        const items = container.querySelectorAll('.feature-item');
+        items.forEach(item => {
+            const idx = parseInt(item.dataset.idx);
+            const feat = features[idx];
+            const detailDiv = item.querySelector(`[id^="detail_${ctqId}_"]`);
+            renderDetail(detailDiv, feat, ctqId, idx);
+            item.querySelector('[data-field="name"]').addEventListener('change', e => {
+                feat.name = e.target.value.trim();
+                e.target.value = feat.name;
+                updateFormulaValidation(ctqId);
+            });
+            item.querySelector('[data-field="type"]').addEventListener('change', e => {
+                feat.type = e.target.value;
+                if (feat.type === 'numeric') { feat.distribution = 'normal'; feat.normalParams = '0,1'; feat.uniformRange = '0,100'; }
+                else { feat.catWeights = ''; }
+                refreshFeatureList(ctqId);
+                updateFormulaValidation(ctqId);
+            });
+            item.querySelector('.remove-feature').addEventListener('click', () => { ctqFeatures[ctqId].splice(idx,1); refreshFeatureList(ctqId); updateFormulaValidation(ctqId); });
+        });
+    }
+
+    function renderDetail(container, feat, ctqId, idx) {
+        if (feat.type === 'numeric') {
+            const dist = feat.distribution;
+            container.innerHTML = `<div class="row"><div class="col-4"><select class="form-select form-select-sm numeric-dist"><option value="normal" ${dist==='normal'?'selected':''}>正态分布</option><option value="uniform" ${dist==='uniform'?'selected':''}>均匀分布</option><option value="lognormal" ${dist==='lognormal'?'selected':''}>对数正态</option></select></div><div class="col-8" id="numeric_param_${ctqId}_${idx}"></div></div>`;
+            const paramDiv = container.querySelector(`#numeric_param_${ctqId}_${idx}`);
+            if (dist === 'normal') {
+                paramDiv.innerHTML = `<input type="text" class="form-control form-control-sm" placeholder="均值,标准差" value="${feat.normalParams}">`;
+                paramDiv.querySelector('input').addEventListener('change', e => { feat.normalParams = e.target.value; });
+            } else if (dist === 'uniform') {
+                paramDiv.innerHTML = `<input type="text" class="form-control form-control-sm" placeholder="最小值,最大值" value="${feat.uniformRange}">`;
+                paramDiv.querySelector('input').addEventListener('change', e => { feat.uniformRange = e.target.value; });
+            } else if (dist === 'lognormal') {
+                paramDiv.innerHTML = `<input type="text" class="form-control form-control-sm" placeholder="均值,标准差" value="${feat.normalParams}">`;
+                paramDiv.querySelector('input').addEventListener('change', e => { feat.normalParams = e.target.value; });
+            }
+            container.querySelector('.numeric-dist').addEventListener('change', e => { feat.distribution = e.target.value; renderDetail(container, feat, ctqId, idx); });
+        } else {
+            container.innerHTML = `<input type="text" class="form-control form-control-sm" placeholder="类别:权重,类别:权重" value="${escapeHtml(feat.catWeights)}">`;
+            container.querySelector('input').addEventListener('change', e => { feat.catWeights = e.target.value; });
+        }
+    }
+
+    function updateFormulaValidation(ctqId) {
+        const formulaInput = document.querySelector(`.ctq-formula[data-ctq="${ctqId}"]`);
+        if (formulaInput) {
+            const features = (ctqFeatures[ctqId] || []).map(f => f.name);
+            const result = validateFormula(formulaInput.value, features);
+            if (result.valid) {
+                formulaInput.classList.remove('is-invalid');
+                formulaInput.classList.add('is-valid');
+            } else {
+                formulaInput.classList.remove('is-valid');
+                formulaInput.classList.add('is-invalid');
+            }
+            const feedback = formulaInput.closest('.formula-config')?.querySelector('.formula-feedback');
+            if (feedback) feedback.textContent = result.message;
+        }
+    }
+
+    async function testFormula(ctqId, formula, sampleValues) {
+        try {
+            const res = await fetch('/simulate/test_formula', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf_token },
+                body: JSON.stringify({ formula, sample_values: sampleValues })
+            });
+            const data = await res.json();
+            if (data.status === 'success') alert(`公式计算结果（示例值）：${data.result}`);
+            else alert(`公式错误：${data.message}`);
+        } catch (err) { alert('测试请求失败'); }
+    }
+
+    // ========== 因子库预置匹配 ==========
+    function getMatchedLibKey(ctqName) {
+        const lowerName = ctqName.toLowerCase();
+        if (lowerName.includes('双歧杆菌') || lowerName.includes('活菌')) return '双歧杆菌活菌数';
+        if (lowerName.includes('净含量') || lowerName.includes('灌装')) return '净含量(200g)';
+        if (lowerName.includes('蛋白')) return '蛋白质含量';
+        if (lowerName.includes('脂肪')) return '脂肪含量';
+        return ctqName;
+    }
+
+    function importFromFactorLibrary(ctqId, ctqName) {
+        const libKey = getMatchedLibKey(ctqName);
+        const lib = factorLibrary[libKey];
+        if (!lib) {
+            alert(`未找到因子库定义：${ctqName}（尝试匹配 ${libKey} 失败）\n请检查CTQ名称是否正确。`);
+            console.warn(`因子库匹配失败: ${ctqName} -> ${libKey}`);
+            return;
+        }
+        ctqFeatures[ctqId] = lib.features.map(f => {
+            const base = { name: f.name, type: f.type };
+            if (f.type === 'numeric') {
+                base.distribution = f.distribution || 'normal';
+                if (base.distribution === 'normal') base.normalParams = `${f.mean},${f.std}`;
+                else if (base.distribution === 'uniform') base.uniformRange = `${f.min || 0},${f.max || 1}`;
+                else if (base.distribution === 'lognormal') base.normalParams = `${f.mean},${f.std}`;
+            } else {
+                base.catWeights = (f.categories || []).map(c => `${c}:1`).join(',');
+            }
+            return base;
+        });
+        ctqFormulas[ctqId] = lib.formula_template;
+        ctqForceCpk[ctqId] = { enabled: false, target_cpk: 1.33, noise_std: 0 };
+        renderCtqCards();
+        alert(`已导入因子库「${libKey}」的默认特征和公式`);
+    }
+
+    // ========== 渲染CTQ卡片（含“应用”按钮） ==========
+    function renderCtqCards() {
+        const container = document.getElementById('ctqFeaturesContainer');
+        container.innerHTML = '';
+        const selected = allCtqs.filter(ctq => selectedCtqIds.includes(ctq.ctq_id));
+        for (let ctq of selected) {
+            const ctqId = ctq.ctq_id;
+            const ctqName = ctq.ctq_name;
+            const display = ctq.product_item ? `${ctq.product_item} - ${ctq.ctq_name}` : `通用 - ${ctq.ctq_name}`;
+            if (!ctqFeatures[ctqId]) ctqFeatures[ctqId] = [];
+            const forceCfg = ctqForceCpk[ctqId] || { enabled: false, target_cpk: 1.33, noise_std: 0 };
+
+            const matchedKey = getMatchedLibKey(ctqName);
+            const templateFormula = factorLibrary[matchedKey]?.formula_template || '';
+            const hasTemplate = templateFormula !== '';
+
+            const card = document.createElement('div');
+            card.className = 'ctq-card';
+            card.dataset.ctqId = ctqId;
+            card.innerHTML = `
+                <div class="ctq-header">
+                    <span class="ctq-name">${escapeHtml(display)}</span>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-info factor-import-btn" data-ctq="${ctqId}" data-name="${ctqName}"><i class="fa fa-database"></i> 因子库</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary add-feature-btn" data-ctq="${ctqId}">+ 添加特征</button>
+                    </div>
+                </div>
+                <div class="formula-config">
+                    <div class="row">
+                        <div class="col-md-7">
+                            <label class="param-label">自定义公式（可选）</label>
+                            <select class="form-select form-select-sm formula-template-select mb-1" data-ctq="${ctqId}" ${!hasTemplate ? 'disabled' : ''}>
+                                <option value="">-- 插入公式模板 --</option>
+                                ${hasTemplate ? `<option value="${templateFormula.replace(/"/g, '&quot;')}">乳制品推荐公式</option>` : '<option value="">无可用模板</option>'}
+                            </select>
+                            <div class="input-group input-group-sm mb-1">
+                                <input type="text" class="form-control form-control-sm ctq-formula" data-ctq="${ctqId}" value="${escapeHtml(ctqFormulas[ctqId] || '')}" placeholder="例如: 3000000 + 10000 * 发酵温度">
+                                <button type="button" class="btn btn-outline-primary apply-formula-btn" data-ctq="${ctqId}">应用</button>
+                            </div>
+                        </div>
+                        <div class="col-md-3"><label class="param-label">额外噪声标准差</label><input type="number" step="any" class="form-control form-control-sm formula-noise" data-ctq="${ctqId}" value="${forceCfg.noise_std}"></div>
+                        <div class="col-md-2"><button type="button" class="btn btn-sm btn-outline-info test-formula-btn" data-ctq="${ctqId}">测试公式</button></div>
+                    </div>
+                    <div class="invalid-feedback formula-feedback" style="font-size: 0.75rem;"></div>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input force-cpk-checkbox" type="checkbox" data-ctq="${ctqId}" ${forceCfg.enabled ? 'checked' : ''}>
+                        <label class="form-check-label small">强制 PPK（通过平移+自动噪声，保留因果关系）</label>
+                    </div>
+                    <div class="row mt-1 cpk-params" style="${forceCfg.enabled ? '' : 'display:none;'}">
+                        <div class="col-md-6"><label class="param-label">目标 PPK</label><input type="number" step="any" class="form-control form-control-sm target-cpk" data-ctq="${ctqId}" value="${forceCfg.target_cpk}"></div>
+                        <div class="col-md-6"><label class="param-label">额外噪声标准差（缩放后添加）</label><input type="number" step="any" class="form-control form-control-sm cpk-noise" data-ctq="${ctqId}" value="${forceCfg.noise_std}"></div>
+                    </div>
+                    <div class="text-muted small mt-1">公式支持 + - * / ** sin cos tan exp log log10 sqrt abs 等，变量名为特征名。留空则使用默认PPK模型。</div>
+                </div>
+                <div class="feature-list" id="featureList_${ctqId}"></div>
+            `;
+            container.appendChild(card);
+            refreshFeatureList(ctqId);
+
+            // 绑定按钮事件
+            card.querySelector('.add-feature-btn').addEventListener('click', () => addFeatureForCtq(ctqId));
+            card.querySelector('.factor-import-btn').addEventListener('click', () => importFromFactorLibrary(ctqId, ctqName));
+
+            // 公式模板选择
+            const templateSelect = card.querySelector('.formula-template-select');
+            if (hasTemplate) {
+                templateSelect.addEventListener('change', (e) => {
+                    if (e.target.value) {
+                        const formulaInput = card.querySelector('.ctq-formula');
+                        formulaInput.value = e.target.value;
+                        ctqFormulas[ctqId] = e.target.value;
+                        updateFormulaValidation(ctqId);
+                        e.target.value = '';
+                    }
+                });
+            }
+
+            // 公式输入框事件
+            const formulaInput = card.querySelector('.ctq-formula');
+            formulaInput.addEventListener('input', () => updateFormulaValidation(ctqId));
+            formulaInput.addEventListener('change', e => {
+                ctqFormulas[ctqId] = e.target.value;
+                updateFormulaValidation(ctqId);
+            });
+
+            // **应用公式按钮**
+            card.querySelectorAll('.apply-formula-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const ctqId = parseInt(this.dataset.ctq);
+                    const formulaInput = card.querySelector(`.ctq-formula[data-ctq="${ctqId}"]`);
+                    if (formulaInput) {
+                        ctqFormulas[ctqId] = formulaInput.value;
+                        updateFormulaValidation(ctqId);
+                        this.classList.add('btn-success');
+                        setTimeout(() => this.classList.remove('btn-success'), 800);
+                    }
+                });
+            });
+
+            // 噪声输入
+            const noiseInput = card.querySelector('.formula-noise');
+            noiseInput.addEventListener('change', e => { if (ctqForceCpk[ctqId]) ctqForceCpk[ctqId].noise_std = parseFloat(e.target.value) || 0; });
+
+            // 测试公式
+            const testBtn = card.querySelector('.test-formula-btn');
+            testBtn.addEventListener('click', async () => {
+                const formula = formulaInput.value;
+                if (!formula) return alert('请先输入公式');
+                const features = ctqFeatures[ctqId] || [];
+                const sampleValues = {};
+                for (let feat of features) {
+                    if (feat.type === 'numeric') {
+                        if (feat.distribution === 'normal') {
+                            const parts = feat.normalParams.split(',').map(parseFloat);
+                            sampleValues[feat.name] = parts[0] || 0;
+                        } else if (feat.distribution === 'uniform') {
+                            const parts = feat.uniformRange.split(',').map(parseFloat);
+                            sampleValues[feat.name] = (parts[0] + parts[1]) / 2 || 0;
+                        } else {
+                            const parts = feat.normalParams.split(',').map(parseFloat);
+                            sampleValues[feat.name] = parts[0] || 0;
+                        }
+                    } else {
+                        const items = feat.catWeights.split(',').map(s=>s.trim());
+                        if (items.length) sampleValues[feat.name] = items[0].split(':')[0] || '';
+                        else sampleValues[feat.name] = 'A';
+                    }
+                }
+                await testFormula(ctqId, formula, sampleValues);
+            });
+
+            // PPK 强制复选框
+            const forceCheck = card.querySelector('.force-cpk-checkbox');
+            const cpkParamsDiv = card.querySelector('.cpk-params');
+            forceCheck.addEventListener('change', e => {
+                const enabled = e.target.checked;
+                cpkParamsDiv.style.display = enabled ? '' : 'none';
+                if (!ctqForceCpk[ctqId]) ctqForceCpk[ctqId] = { enabled, target_cpk: 1.33, noise_std: 0 };
+                else ctqForceCpk[ctqId].enabled = enabled;
+            });
+            const targetCpkInput = card.querySelector('.target-cpk');
+            targetCpkInput.addEventListener('change', e => { if (ctqForceCpk[ctqId]) ctqForceCpk[ctqId].target_cpk = parseFloat(e.target.value) || 1.33; });
+            const cpkNoiseInput = card.querySelector('.cpk-noise');
+            cpkNoiseInput.addEventListener('change', e => { if (ctqForceCpk[ctqId]) ctqForceCpk[ctqId].noise_std = parseFloat(e.target.value) || 0; });
+
+            updateFormulaValidation(ctqId);
+        }
+    }
+
+    // ========== 配置收集（强制同步公式） ==========
+    function collectConfig() {
+        // 强制从DOM同步公式
+        document.querySelectorAll('.ctq-card').forEach(card => {
+            const ctqId = parseInt(card.dataset.ctqId);
+            const formulaInput = card.querySelector('.ctq-formula');
+            if (formulaInput) {
+                ctqFormulas[ctqId] = formulaInput.value;
+            }
+        });
+        const form = document.getElementById('simulateForm');
+        const formData = new FormData(form);
+        const config = {
+            batch_count: parseInt(formData.get('batch_count')),
+            samples_per_batch: parseInt(formData.get('samples_per_batch')),
+            start_date: formData.get('start_date'),
+            random_seed: formData.get('random_seed') ? parseInt(formData.get('random_seed')) : null,
+            product_items: formData.get('product_items_str').split(',').map(s=>s.trim()).filter(s=>s),
+            product_lines: formData.get('product_lines_str').split(',').map(s=>s.trim()).filter(s=>s),
+            shifts: formData.get('shifts_str').split(',').map(s=>s.trim()).filter(s=>s),
+            batch_qty_min: parseInt(formData.get('batch_qty_min')),
+            batch_qty_max: parseInt(formData.get('batch_qty_max')),
+            outlier_ratio: parseFloat(formData.get('outlier_ratio')),
+            target_cpk: parseFloat(formData.get('target_cpk')),
+            bias_tendency: parseFloat(formData.get('bias_tendency')),
+            auto_import: document.getElementById('autoImport').checked,
+            import_mode: document.getElementById('importMode').value,
+            ctq_ids: selectedCtqIds,
+            ctq_features: {},
+            ctq_formulas: ctqFormulas,
+            force_cpk_config: {}
+        };
+        for (let ctqId of selectedCtqIds) {
+            const features = ctqFeatures[ctqId] || [];
+            const featList = [];
+            for (let feat of features) {
+                if (!feat.name.trim()) continue;
+                const f = { name: feat.name.trim(), type: feat.type };
+                if (feat.type === 'numeric') {
+                    f.distribution = feat.distribution;
+                    if (feat.distribution === 'normal') {
+                        const parts = feat.normalParams.split(',').map(parseFloat);
+                        f.mean = parts[0] || 0; f.std = parts[1] || 1;
+                    } else if (feat.distribution === 'uniform') {
+                        const parts = feat.uniformRange.split(',').map(parseFloat);
+                        f.min = parts[0] || 0; f.max = parts[1] || 1;
+                    } else if (feat.distribution === 'lognormal') {
+                        const parts = feat.normalParams.split(',').map(parseFloat);
+                        f.mean = parts[0] || 1; f.std = parts[1] || 0.5;
+                    }
+                } else {
+                    const items = feat.catWeights.split(',').map(s=>s.trim());
+                    const categories=[], weights=[];
+                    for (let item of items) {
+                        let [cat,w] = item.split(':');
+                        if (cat) { categories.push(cat); weights.push(w ? parseFloat(w) : 1); }
+                    }
+                    f.categories = categories; f.weights = weights;
+                }
+                featList.push(f);
+            }
+            if (featList.length) config.ctq_features[ctqId] = featList;
+
+            const force = ctqForceCpk[ctqId];
+            if (force && force.enabled) {
+                config.force_cpk_config[ctqId] = {
+                    enabled: true,
+                    target_cpk: force.target_cpk || 1.33,
+                    noise_std: force.noise_std || 0
+                };
+            } else {
+                config.force_cpk_config[ctqId] = { enabled: false };
+            }
+        }
+        return config;
+    }
+
+    // ========== 实时预览（自动同步公式） ==========
+    async function previewConfiguration() {
+        document.querySelectorAll('.ctq-card').forEach(card => {
+            const ctqId = parseInt(card.dataset.ctqId);
+            const formulaInput = card.querySelector('.ctq-formula');
+            if (formulaInput) {
+                ctqFormulas[ctqId] = formulaInput.value;
+            }
+        });
+        const config = collectConfig();
+        if (!config.ctq_ids.length) { alert('请至少选择一个CTQ'); return; }
+        const previewBtn = document.getElementById('previewBtn');
+        previewBtn.disabled = true;
+        previewBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 预览中...';
+        try {
+            const res = await fetch('/simulate/preview', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf_token },
+                body: JSON.stringify(config)
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                let html = '<h6>预览结果（基于20批次）</h6><ul>';
+                for (const [ctqName, stats] of Object.entries(data.stats)) {
+                    html += `<li><strong>${escapeHtml(ctqName)}</strong> : PPK = ${stats.ppk ?? 'N/A'}, 预估R² = ${stats.r2_est}, 均值=${stats.mean}, 标准差=${stats.std}</li>`;
+                }
+                html += '</ul><p class="small text-muted">注：PPK基于整体标准差计算，若启用PPK强制应接近目标值。预估R²基于信噪比估算，实际以训练为准。</p>';
+                document.getElementById('previewResult').innerHTML = html;
+                document.getElementById('previewResult').style.display = 'block';
+            } else {
+                alert('预览失败：' + data.error);
+            }
+        } catch (err) { alert('请求失败'); }
+        finally {
+            previewBtn.disabled = false;
+            previewBtn.innerHTML = '<i class="fa fa-eye me-1"></i>实时预览';
+        }
+    }
+
+    // ========== 配置持久化 ==========
+    function saveConfig() {
+        const config = collectConfig();
+        const toSave = {
+            version: 2,
+            selectedCtqIds: config.ctq_ids,
+            ctqFeatures: ctqFeatures,
+            ctqFormulas: ctqFormulas,
+            ctqForceCpk: ctqForceCpk
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+        showResult('success', '配置已保存到浏览器');
+    }
+
+    function loadConfig() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) { showResult('warning', '未找到已保存的配置'); return; }
+        try {
+            const saved = JSON.parse(raw);
+            if (saved.version === 2) {
+                selectedCtqIds = saved.selectedCtqIds || [];
+                ctqFeatures = saved.ctqFeatures || {};
+                ctqFormulas = saved.ctqFormulas || {};
+                ctqForceCpk = saved.ctqForceCpk || {};
+                renderCtqSelector();
+                showResult('success', '配置加载成功');
+            } else {
+                showResult('danger', '配置版本不兼容');
+            }
+        } catch (e) { showResult('danger', '配置解析失败'); }
+    }
+
+    function showResult(type, msg) {
+        const div = document.getElementById('resultMsg');
+        div.className = `alert alert-${type}`;
+        div.innerHTML = `<i class="fa fa-${type==='success'?'check-circle':'exclamation-triangle'} me-2"></i>${msg}`;
+        div.style.display = 'block';
+        setTimeout(() => div.style.display = 'none', 5000);
+    }
+
+    // ========== 表单提交 ==========
+    document.getElementById('simulateForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const config = collectConfig();
+        if (!config.ctq_ids.length) { alert('请至少选择一个CTQ'); return; }
+        const generateBtn = document.getElementById('generateBtn');
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>生成中...';
+        try {
+            const res = await fetch('/simulate/generate', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf_token },
+                body: JSON.stringify(config)
+            });
+            if (config.auto_import) {
+                const data = await res.json();
+                if (data.status === 'success') showResult('success', data.message);
+                else throw new Error(data.error);
+            } else {
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `mock_data_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showResult('success', '文件下载已开始');
+            }
+        } catch (err) { showResult('danger', '生成失败：' + err.message); }
+        finally {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="fa fa-play me-2"></i>生成数据';
+        }
+    });
+
+    // ========== 因子库管理 ==========
+    function loadCustomLibraries() {
+        const stored = localStorage.getItem(CUSTOM_LIB_KEY);
+        if (stored) {
+            try { customLibraries = JSON.parse(stored); } catch(e) { customLibraries = []; }
+        } else {
+            customLibraries = [];
+        }
+    }
+
+    function saveCustomLibraries() {
+        localStorage.setItem(CUSTOM_LIB_KEY, JSON.stringify(customLibraries));
+    }
+
+    function getAllLibraries() {
+        const presetList = Object.entries(factorLibrary).map(([key, lib]) => ({
+            id: `preset_${key}`,
+            name: key,
+            keyword: key,
+            formula: lib.formula_template,
+            features: lib.features,
+            isPreset: true
+        }));
+        const customList = customLibraries.map((lib, idx) => ({
+            id: `custom_${idx}`,
+            ...lib,
+            isPreset: false
+        }));
+        return [...presetList, ...customList];
+    }
+
+    function renderFactorLibList() {
+        const container = document.getElementById('factorLibList');
+        const libraries = getAllLibraries();
+        if (!libraries.length) {
+            container.innerHTML = '<div class="col-12 text-muted">暂无因子库，点击“新建”添加</div>';
+            return;
+        }
+        let html = '';
+        libraries.forEach(lib => {
+            html += `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                            <strong>${escapeHtml(lib.name)}</strong>
+                            ${lib.isPreset ? '<span class="badge bg-secondary">预置</span>' : ''}
+                        </div>
+                        <div class="card-body small">
+                            <div><strong>匹配关键词：</strong> ${escapeHtml(lib.keyword)}</div>
+                            <div><strong>特征数：</strong> ${lib.features?.length || 0}</div>
+                            <div class="text-truncate"><strong>公式：</strong> ${escapeHtml(lib.formula?.substring(0, 60) || '')}...</div>
+                        </div>
+                        <div class="card-footer bg-transparent d-flex justify-content-between">
+                            <button class="btn btn-sm btn-outline-primary use-lib-btn" data-lib='${JSON.stringify(lib)}'><i class="fa fa-upload"></i> 导入当前CTQ</button>
+                            ${!lib.isPreset ? `<button class="btn btn-sm btn-outline-secondary edit-lib-btn" data-lib='${JSON.stringify(lib)}'><i class="fa fa-edit"></i> 编辑</button>
+                            <button class="btn btn-sm btn-outline-danger delete-lib-btn" data-id="${lib.id}"><i class="fa fa-trash"></i> 删除</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+
+        document.querySelectorAll('.use-lib-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const lib = JSON.parse(btn.dataset.lib);
+                importLibraryToCurrentCtq(lib);
+                bootstrap.Modal.getInstance(document.getElementById('factorLibModal')).hide();
+            });
+        });
+        document.querySelectorAll('.edit-lib-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const lib = JSON.parse(btn.dataset.lib);
+                openEditLibModal(lib);
+            });
+        });
+        document.querySelectorAll('.delete-lib-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                if (confirm('确定删除该因子库吗？')) {
+                    const idx = customLibraries.findIndex(l => `custom_${customLibraries.indexOf(l)}` === id);
+                    if (idx !== -1) {
+                        customLibraries.splice(idx, 1);
+                        saveCustomLibraries();
+                        renderFactorLibList();
+                    }
+                }
+            });
+        });
+    }
+
+    let editingLibIndex = -1;
+    function openEditLibModal(lib = null) {
+        const modal = new bootstrap.Modal(document.getElementById('editLibModal'));
+        document.getElementById('libFeaturesContainer').innerHTML = '';
+        if (lib && !lib.isPreset) {
+            editingLibIndex = customLibraries.findIndex(l => l.name === lib.name && l.keyword === lib.keyword);
+            document.getElementById('libName').value = lib.name;
+            document.getElementById('libKeyword').value = lib.keyword;
+            document.getElementById('libFormula').value = lib.formula;
+            if (lib.features) {
+                lib.features.forEach(feat => addFeatureToLibForm(feat));
+            }
+            document.getElementById('editLibTitle').innerText = '编辑因子库';
+        } else {
+            editingLibIndex = -1;
+            document.getElementById('editLibTitle').innerText = '新建因子库';
+            addFeatureToLibForm(null);
+        }
+        modal.show();
+    }
+
+    function addFeatureToLibForm(feat = null) {
+        const container = document.getElementById('libFeaturesContainer');
+        const idx = container.children.length;
+        const div = document.createElement('div');
+        div.className = 'modal-feature-item mb-2';
+        div.dataset.idx = idx;
+
+        const featType = feat?.type || 'numeric';
+        const dist = feat?.distribution || 'normal';
+        const paramValue = feat?.normalParams || feat?.uniformRange || '';
+
+        div.innerHTML = `
+            <div class="row g-2">
+                <div class="col-md-3"><input type="text" class="form-control form-control-sm" placeholder="特征名" value="${feat ? escapeHtml(feat.name) : ''}"></div>
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm feature-type">
+                        <option value="numeric" ${featType === 'numeric' ? 'selected' : ''}>数值型</option>
+                        <option value="categorical" ${featType === 'categorical' ? 'selected' : ''}>分类型</option>
+                    </select>
+                </div>
+                <div class="col-md-6 numeric-params" style="${featType === 'categorical' ? 'display:none' : ''}">
+                    <div class="row g-1">
+                        <div class="col-6">
+                            <select class="form-select form-select-sm dist-type">
+                                <option value="normal" ${dist === 'normal' ? 'selected' : ''}>正态分布</option>
+                                <option value="uniform" ${dist === 'uniform' ? 'selected' : ''}>均匀分布</option>
+                                <option value="lognormal" ${dist === 'lognormal' ? 'selected' : ''}>对数正态</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <input type="text" class="form-control form-control-sm param-input" placeholder="参数" value="${escapeHtml(paramValue)}">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 categorical-params" style="${featType === 'numeric' ? 'display:none' : ''}">
+                    <input type="text" class="form-control form-control-sm" placeholder="类别:权重" value="${feat?.catWeights || ''}">
+                </div>
+                <div class="col-md-1"><button type="button" class="btn btn-sm btn-outline-danger remove-feature-btn"><i class="fa fa-trash"></i></button></div>
+            </div>
+        `;
+        container.appendChild(div);
+
+        const typeSelect = div.querySelector('.feature-type');
+        const numericDiv = div.querySelector('.numeric-params');
+        const categoricalDiv = div.querySelector('.categorical-params');
+        typeSelect.addEventListener('change', () => {
+            const isNum = typeSelect.value === 'numeric';
+            numericDiv.style.display = isNum ? '' : 'none';
+            categoricalDiv.style.display = isNum ? 'none' : '';
+        });
+
+        const distSelect = div.querySelector('.dist-type');
+        const paramInput = div.querySelector('.param-input');
+        if (distSelect && paramInput) {
+            distSelect.addEventListener('change', () => {
+                const newDist = distSelect.value;
+                if (newDist === 'normal') paramInput.placeholder = '均值,标准差';
+                else if (newDist === 'uniform') paramInput.placeholder = '最小值,最大值';
+                else if (newDist === 'lognormal') paramInput.placeholder = '均值,标准差';
+            });
+            distSelect.dispatchEvent(new Event('change'));
+        }
+
+        div.querySelector('.remove-feature-btn').addEventListener('click', () => div.remove());
+    }
+
+    function saveCurrentLibrary() {
+        const name = document.getElementById('libName').value.trim();
+        if (!name) { alert('请输入因子库名称'); return; }
+        const keyword = document.getElementById('libKeyword').value.trim() || name;
+        const formula = document.getElementById('libFormula').value.trim();
+        const features = [];
+        document.querySelectorAll('#libFeaturesContainer .modal-feature-item').forEach(div => {
+            const nameInput = div.querySelector('input[placeholder="特征名"]');
+            const featName = nameInput?.value.trim();
+            if (!featName) return;
+            const type = div.querySelector('.feature-type').value;
+            const featObj = { name: featName, type: type };
+            if (type === 'numeric') {
+                const distSelect = div.querySelector('.dist-type');
+                const paramInput = div.querySelector('.param-input');
+                const distribution = distSelect ? distSelect.value : 'normal';
+                const paramValue = paramInput ? paramInput.value.trim() : '';
+                featObj.distribution = distribution;
+                if (distribution === 'normal') {
+                    featObj.normalParams = paramValue;
+                } else if (distribution === 'uniform') {
+                    featObj.uniformRange = paramValue;
+                } else if (distribution === 'lognormal') {
+                    featObj.normalParams = paramValue;
+                }
+            } else {
+                featObj.catWeights = div.querySelector('.categorical-params input')?.value.trim() || '';
+            }
+            features.push(featObj);
+        });
+        if (features.length === 0) { alert('至少需要一个特征'); return; }
+        const newLib = { name, keyword, formula, features };
+        if (editingLibIndex >= 0) {
+            customLibraries[editingLibIndex] = newLib;
+        } else {
+            customLibraries.push(newLib);
+        }
+        saveCustomLibraries();
+        bootstrap.Modal.getInstance(document.getElementById('editLibModal')).hide();
+        renderFactorLibList();
+        alert('因子库保存成功');
+    }
+
+    function importLibraryToCurrentCtq(lib) {
+        const selected = allCtqs.filter(ctq => selectedCtqIds.includes(ctq.ctq_id));
+        if (selected.length === 0) {
+            alert('请先选择一个CTQ');
+            return;
+        }
+        let targetCtqId;
+        if (selected.length === 1) {
+            targetCtqId = selected[0].ctq_id;
+        } else {
+            const choice = prompt(`多个CTQ被选中，请输入要导入的CTQ ID（${selected.map(c => `${c.ctq_id}:${c.ctq_name}`).join(', ')}）`);
+            if (!choice) return;
+            targetCtqId = parseInt(choice);
+            if (!selected.find(c => c.ctq_id === targetCtqId)) { alert('无效ID'); return; }
+        }
+        const features = lib.features.map(f => {
+            const base = { name: f.name, type: f.type };
+            if (f.type === 'numeric') {
+                base.distribution = f.distribution || 'normal';
+                if (base.distribution === 'normal') base.normalParams = f.normalParams || '0,1';
+                else if (base.distribution === 'uniform') base.uniformRange = f.uniformRange || '0,1';
+                else if (base.distribution === 'lognormal') base.normalParams = f.normalParams || '1,0.5';
+            } else {
+                base.catWeights = f.catWeights || '';
+            }
+            return base;
+        });
+        ctqFeatures[targetCtqId] = features;
+        ctqFormulas[targetCtqId] = lib.formula;
+        ctqForceCpk[targetCtqId] = { enabled: false, target_cpk: 1.33, noise_std: 0 };
+        renderCtqCards();
+        alert(`已导入因子库「${lib.name}」到CTQ ID ${targetCtqId}`);
+    }
+
+    // ========== 页面初始化 ==========
+    document.getElementById('saveConfigBtn').addEventListener('click', saveConfig);
+    document.getElementById('loadConfigBtn').addEventListener('click', loadConfig);
+    document.getElementById('previewBtn').addEventListener('click', previewConfiguration);
+    document.getElementById('manageFactorLibBtn').addEventListener('click', () => {
+        renderFactorLibList();
+        new bootstrap.Modal(document.getElementById('factorLibModal')).show();
+    });
+    document.getElementById('addLibBtn').addEventListener('click', () => openEditLibModal(null));
+    document.getElementById('saveLibBtn').addEventListener('click', saveCurrentLibrary);
+    document.getElementById('addFeatureBtn').addEventListener('click', () => addFeatureToLibForm(null));
+
+    // 导入模式联动
+    const autoImportCheck = document.getElementById('autoImport');
+    const importModeSelect = document.getElementById('importMode');
+    autoImportCheck.addEventListener('change', function() {
+        importModeSelect.disabled = !this.checked;
+    });
+    importModeSelect.disabled = !autoImportCheck.checked;
+
+    loadCustomLibraries();
+    (function autoLoad() {
+        if (localStorage.getItem(STORAGE_KEY) && confirm('检测到之前保存的配置，是否加载？')) {
+            loadConfig();
+        } else {
+            renderCtqSelector();
+        }
+    })();
+</script>
+{% endblock %}

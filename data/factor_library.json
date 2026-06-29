@@ -1,0 +1,211 @@
+{
+  "双歧杆菌活菌数": {
+    "features": [
+      {
+        "name": "初始添加量_log",
+        "type": "numeric",
+        "mean": 7.0,
+        "std": 0.1,
+        "desc": "log10(初始添加量 CFU/g)"
+      },
+      {
+        "name": "共生菌比例",
+        "type": "numeric",
+        "mean": 2.0,
+        "std": 0.3,
+        "desc": "球菌:杆菌比例"
+      },
+      {
+        "name": "发酵温度",
+        "type": "numeric",
+        "mean": 38.5,
+        "std": 1.0,
+        "desc": "℃"
+      },
+      {
+        "name": "发酵时间",
+        "type": "numeric",
+        "mean": 8.0,
+        "std": 1.0,
+        "desc": "小时"
+      },
+      {
+        "name": "终点pH",
+        "type": "numeric",
+        "mean": 4.5,
+        "std": 0.1,
+        "desc": ""
+      },
+      {
+        "name": "总固形物",
+        "type": "numeric",
+        "mean": 13.5,
+        "std": 1.0,
+        "desc": "%"
+      },
+      {
+        "name": "氧气含量",
+        "type": "numeric",
+        "mean": 0.2,
+        "std": 0.1,
+        "desc": "ppm"
+      },
+      {
+        "name": "促进因子",
+        "type": "categorical",
+        "categories": [
+          "FOS",
+          "无"
+        ],
+        "desc": "低聚果糖"
+      },
+      {
+        "name": "透氧率",
+        "type": "categorical",
+        "categories": [
+          "高阻隔",
+          "普通"
+        ],
+        "desc": "包装透氧率"
+      },
+      {
+        "name": "贮藏温度",
+        "type": "numeric",
+        "mean": 4.0,
+        "std": 0.5,
+        "desc": "℃"
+      },
+      {
+        "name": "贮藏天数",
+        "type": "numeric",
+        "mean": 10,
+        "std": 7,
+        "desc": "天"
+      },
+      {
+        "name": "菌株",
+        "type": "categorical",
+        "categories": [
+          "BB-12",
+          "常规"
+        ],
+        "desc": "抗逆性"
+      }
+    ],
+    "formula_template": "10 ** (7.0 + 0.15*(初始添加量_log-7) + 0.08*(共生菌比例-2.0) + 0.20*(发酵温度-38.5)/1.0 - 0.15*(发酵时间-8)/1.0 - 0.40*(终点pH-4.5)/0.1 + 0.10*(总固形物-13.5)/1.0 - 0.05*(氧气含量-0.2)/0.1 + 0.30*(1 if 促进因子=='FOS' else 0) + 0.20*(1 if 透氧率=='高阻隔' else 0) - 0.05*(贮藏温度-4)/0.5 - 0.10*(贮藏天数/21) + 0.25*(1 if 菌株=='BB-12' else 0))"
+  },
+  "净含量(200g)": {
+    "features": [
+      {
+        "name": "灌装机精度",
+        "type": "numeric",
+        "mean": 0.0,
+        "std": 0.8,
+        "desc": "g"
+      },
+      {
+        "name": "产品温度",
+        "type": "numeric",
+        "mean": 8.0,
+        "std": 1.0,
+        "desc": "℃"
+      },
+      {
+        "name": "产品粘度",
+        "type": "numeric",
+        "mean": 500,
+        "std": 100,
+        "desc": "cP",
+        "distribution": "lognormal"
+      },
+      {
+        "name": "灌装速度",
+        "type": "numeric",
+        "mean": 200,
+        "std": 20,
+        "desc": "瓶/分钟"
+      },
+      {
+        "name": "容器重量波动",
+        "type": "numeric",
+        "mean": 0.0,
+        "std": 1.0,
+        "desc": "g"
+      },
+      {
+        "name": "管道压力波动",
+        "type": "numeric",
+        "mean": 0.0,
+        "std": 0.3,
+        "desc": "bar"
+      }
+    ],
+    "formula_template": "200.0 + 灌装机精度 + (产品温度-8)*0.2 - (log10(产品粘度)-log10(500))*2.0 - (灌装速度-200)/100 + 容器重量波动 + 管道压力波动*1.5"
+  },
+  "蛋白质含量": {
+    "features": [
+      {
+        "name": "原料奶蛋白",
+        "type": "numeric",
+        "mean": 3.1,
+        "std": 0.15,
+        "desc": "%"
+      },
+      {
+        "name": "均质压力",
+        "type": "numeric",
+        "mean": 20,
+        "std": 2,
+        "desc": "MPa"
+      },
+      {
+        "name": "UHT温度",
+        "type": "numeric",
+        "mean": 140,
+        "std": 1.5,
+        "desc": "℃"
+      },
+      {
+        "name": "储存时间",
+        "type": "numeric",
+        "mean": 90,
+        "std": 60,
+        "desc": "天"
+      }
+    ],
+    "formula_template": "3.1 + 0.8*(原料奶蛋白-3.1) - 0.05*(均质压力-20)/2 - 0.10*(UHT温度-140)/1.5 - 0.05*(储存时间/180)"
+  },
+  "脂肪含量": {
+    "features": [
+      {
+        "name": "原料奶脂肪",
+        "type": "numeric",
+        "mean": 3.8,
+        "std": 0.2,
+        "desc": "%"
+      },
+      {
+        "name": "标准化分离效率",
+        "type": "numeric",
+        "mean": 0.98,
+        "std": 0.01,
+        "desc": ""
+      },
+      {
+        "name": "均质压力",
+        "type": "numeric",
+        "mean": 20,
+        "std": 2,
+        "desc": "MPa"
+      },
+      {
+        "name": "储存时间",
+        "type": "numeric",
+        "mean": 90,
+        "std": 60,
+        "desc": "天"
+      }
+    ],
+    "formula_template": "3.5 + 0.9*(原料奶脂肪-3.8) - (1-标准化分离效率)*3.8 + 0.05*(均质压力-20)/2 - 0.02*(储存时间/180)"
+  }
+}

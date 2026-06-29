@@ -690,6 +690,7 @@ def shap_summary(ctq_id, model_type):
     pipeline, X_orig, X_preprocessed, y, feature_names = get_model_and_data(ctq_id, product_item, model_type)
     if pipeline is None:
         return jsonify({'error': '没有可用的有效模型，请重新训练模型后再试'}), 404
+    # ... 前面的代码保持不变（获取 pipeline, X_preprocessed, feature_names 等）
     import shap
     model = pipeline.named_steps['model']
     if model_type in ('lightgbm', 'xgboost', 'random_forest', 'decision_tree'):
@@ -702,12 +703,21 @@ def shap_summary(ctq_id, model_type):
         shap_values = explainer.shap_values(X_preprocessed)
     else:
         return jsonify({'error': f'不支持的模型类型 {model_type}'}), 400
+
+    # 兼容处理 expected_value
+    if hasattr(explainer, 'expected_value'):
+        ev = explainer.expected_value
+        if isinstance(ev, (np.ndarray, list)):
+            base_value = float(ev[0]) if len(ev) > 0 else 0.0
+        else:
+            base_value = float(ev)
+    else:
+        base_value = 0.0
+
     mean_abs_shap = np.abs(shap_values).mean(axis=0)
     sorted_idx = np.argsort(mean_abs_shap)[::-1]
     shap_data = [{'feature': feature_names[idx], 'values': shap_values[:, idx].tolist()} for idx in sorted_idx]
-    base_value = float(explainer.expected_value) if hasattr(explainer, 'expected_value') else 0.0
     return jsonify({'shap_data': shap_data, 'base_value': base_value})
-
 
 @influence_bp.route('/api/pdp/<int:ctq_id>/<model_type>')
 def partial_dependence(ctq_id, model_type):

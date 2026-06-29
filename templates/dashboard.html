@@ -168,11 +168,11 @@ var processVals = {{ process_vals|tojson }};
 var allCharts = {};
 
 function drawAllCharts() {
-    if (ctqLossData.length) allCharts.ctq = drawPieChart('chart_ctq', ctqLossData);
-    if (itemLabels.length) allCharts.item = drawBarChart('chart_item', itemLabels, itemValues, '损失(元)');
-    if (lineLabels.length) allCharts.line = drawBarChart('chart_line', lineLabels, lineValues, '损失(元)');
-    if (months.length) allCharts.month = drawLineChart('chart_month', months, monthLosses, '损失(元)');
-    if (processLabels.length) allCharts.process = drawBarChart('chart_process', processLabels, processVals, '损失(元)');
+    if (ctqLossData.length) allCharts.ctq = drawPieChart('chart_ctq', ctqLossData, '', true);
+    if (itemLabels.length) allCharts.item = drawBarChart('chart_item', itemLabels, itemValues, '损失(元)', true);
+    if (lineLabels.length) allCharts.line = drawBarChart('chart_line', lineLabels, lineValues, '损失(元)', true);
+    if (months.length) allCharts.month = drawLineChart('chart_month', months, monthLosses, '损失(元)', true);
+    if (processLabels.length) allCharts.process = drawBarChart('chart_process', processLabels, processVals, '损失(元)', true);
     bindChartEvents();
 }
 

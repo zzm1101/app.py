@@ -59,44 +59,76 @@ function removeLoading(selector, originText) {
     $(selector).prop('disabled', false).html(originText);
 }
 
-function drawPieChart(domId, data, title = '') {
+// 饼图
+function drawPieChart(domId, data, title = '', showLabel = false) {
     var chart = echarts.init(document.getElementById(domId), 'yogurt');
     chart.setOption({
         title: { text: title, left: 'center', textStyle: { fontSize: 14 } },
         tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+        toolbox: {
+            feature: {
+                dataZoom: { title: { zoom: '区域缩放', back: '还原' } },
+                restore: { title: '重置' },
+                saveAsImage: { title: '保存图片' }
+            },
+            right: 20, top: 0
+        },
         series: [{
             type: 'pie',
             radius: ['40%', '70%'],
             data: data,
-            label: { show: true, formatter: '{b}: {d}%' },
+            label: showLabel ? { show: true, formatter: '{b}: {d}%' } : { show: false },
             itemStyle: { borderRadius: 6 }
         }]
     });
-    window.addEventListener('resize', function () { chart.resize(); });
+    window.addEventListener('resize', function() { chart.resize(); });
     return chart;
 }
 
-function drawBarChart(domId, xData, yData, yName = '') {
+// 柱状图
+function drawBarChart(domId, xData, yData, yName = '', showLabel = false) {
     var chart = echarts.init(document.getElementById(domId), 'yogurt');
     chart.setOption({
         tooltip: { trigger: 'axis' },
+        toolbox: {
+            feature: {
+                dataZoom: { title: { zoom: '区域缩放', back: '还原' } },
+                restore: { title: '重置' },
+                saveAsImage: { title: '保存图片' }
+            },
+            right: 20, top: 0
+        },
         grid: { containLabel: true },
         xAxis: { type: 'category', data: xData, axisLabel: { rotate: 20 } },
         yAxis: { type: 'value', name: yName },
         series: [{
             type: 'bar',
             data: yData,
-            itemStyle: { borderRadius: [4, 4, 0, 0] }
+            itemStyle: { borderRadius: [4, 4, 0, 0] },
+            label: showLabel ? {
+                show: true,
+                position: 'top',
+                formatter: function(params) { return params.value.toFixed(2); }
+            } : { show: false }
         }]
     });
-    window.addEventListener('resize', function () { chart.resize(); });
+    window.addEventListener('resize', function() { chart.resize(); });
     return chart;
 }
 
-function drawLineChart(domId, xData, yData, yName = '') {
+// 折线图
+function drawLineChart(domId, xData, yData, yName = '', showLabel = false) {
     var chart = echarts.init(document.getElementById(domId), 'yogurt');
     chart.setOption({
         tooltip: { trigger: 'axis' },
+        toolbox: {
+            feature: {
+                dataZoom: { title: { zoom: '区域缩放', back: '还原' } },
+                restore: { title: '重置' },
+                saveAsImage: { title: '保存图片' }
+            },
+            right: 20, top: 0
+        },
         grid: { containLabel: true },
         xAxis: { type: 'category', data: xData },
         yAxis: { type: 'value', name: yName },
@@ -104,13 +136,17 @@ function drawLineChart(domId, xData, yData, yName = '') {
             type: 'line',
             data: yData,
             smooth: true,
-            lineStyle: { width: 2 }
+            lineStyle: { width: 2 },
+            label: showLabel ? {
+                show: true,
+                position: 'top',
+                formatter: function(params) { return params.value.toFixed(2); }
+            } : { show: false }
         }]
     });
-    window.addEventListener('resize', function () { chart.resize(); });
+    window.addEventListener('resize', function() { chart.resize(); });
     return chart;
 }
-
 function initDataTable(selector, options) {
     var defaults = {
         pageLength: 25,

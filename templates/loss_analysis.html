@@ -274,12 +274,20 @@ $(document).ready(function() {
         columnDefs: [{ type: 'num', targets: [2, 3] }]
     });
 
-    // 图表绘制（统一紫色/协调色）
+    // ========== 各CTQ损失占比（饼图，显示标签，添加工具栏） ==========
     if (ctqData && ctqData.length > 0) {
         var ctqChart = echarts.init(document.getElementById('ctqChart'));
         ctqChart.setOption({
             color: ['#6366f1','#8b5cf6','#a78bfa','#3b82f6','#06b6d4','#10b981','#f59e0b','#ef4444'],
             tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
+            toolbox: {
+                feature: {
+                    dataZoom: { title: { zoom: '区域缩放', back: '还原' } },
+                    restore: { title: '重置' },
+                    saveAsImage: { title: '保存图片' }
+                },
+                right: 20, top: 0
+            },
             series: [{
                 type: 'pie',
                 radius: ['40%', '70%'],
@@ -291,25 +299,54 @@ $(document).ready(function() {
         $(window).on('resize', function() { ctqChart.resize(); });
     }
 
+    // ========== 周损失趋势（折线图，显示标签，保留2位小数，添加工具栏） ==========
     if (weeks && weeks.length > 0) {
         var weekChart = echarts.init(document.getElementById('weekChart'));
         weekChart.setOption({
             color: ['#8b5cf6'],
             tooltip: { trigger: 'axis' },
+            toolbox: {
+                feature: {
+                    dataZoom: { title: { zoom: '区域缩放', back: '还原' } },
+                    restore: { title: '重置' },
+                    saveAsImage: { title: '保存图片' }
+                },
+                right: 20, top: 0
+            },
             grid: { containLabel: true },
             xAxis: { type: 'category', data: weeks },
             yAxis: { type: 'value', name: '损失(元)' },
-            series: [{ type: 'line', data: weekLoss, smooth: true, lineStyle: { color: '#8b5cf6' }, itemStyle: { color: '#8b5cf6' } }]
+            series: [{
+                type: 'line',
+                data: weekLoss,
+                smooth: true,
+                lineStyle: { color: '#8b5cf6' },
+                itemStyle: { color: '#8b5cf6' },
+                label: {
+                    show: true,
+                    position: 'top',
+                    formatter: function(params) { return params.value.toFixed(2); }
+                }
+            }]
         });
         $(window).on('resize', function() { weekChart.resize(); });
     }
 
+    // ========== 过程能力柱状图（PPK，显示标签，保留2位小数，添加工具栏） ==========
     if (capData && capData.length > 0) {
         var cpkChart = echarts.init(document.getElementById('cpkChart'));
         var names = capData.map(function(d) { return d.product_item + '-' + d.ctq_name; });
         var ppks = capData.map(function(d) { return d.ppk == '-' ? 0 : parseFloat(d.ppk); });
         cpkChart.setOption({
             tooltip: { trigger: 'axis' },
+            toolbox: {
+                feature: {
+                    dataZoom: { title: { zoom: '区域缩放', back: '还原' } },
+                    restore: { title: '重置' },
+                    saveAsImage: { title: '保存图片' }
+                },
+                right: 20, top: 0
+            },
             grid: { containLabel: true },
             xAxis: { type: 'category', data: names, axisLabel: { rotate: 20, interval: 0 } },
             yAxis: { type: 'value', name: 'PPK' },
@@ -321,7 +358,12 @@ $(document).ready(function() {
                         value: v,
                         itemStyle: { color: v >= 1.33 ? '#10b981' : (v >= 1.0 ? '#f59e0b' : '#ef4444') }
                     };
-                })
+                }),
+                label: {
+                    show: true,
+                    position: 'top',
+                    formatter: function(params) { return params.value.toFixed(2); }
+                }
             }]
         });
         $(window).on('resize', function() { cpkChart.resize(); });

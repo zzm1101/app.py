@@ -459,3 +459,153 @@ def compute_control_chart(production_data, ctq_usl=None, ctq_lsl=None, ctq_targe
         "ctq_name": f"{production_data[0].product_item or ''} - {production_data[0].ctq_name}" if production_data else "",
         "time_range": f"{batch_dates[0]} ~ {batch_dates[-1]}" if batch_dates else ""
     }
+
+    # 追加到 services/spc_service.py 末尾
+
+def compute_individual_control_chart(values, rules_active=None):
+        """
+        针对单值序列（I-MR 图）计算控制限和判异规则
+        返回格式与 compute_control_chart 中的 I-MR 部分类似
+        """
+        import numpy as np
+        if rules_active is None:
+            rules_active = list(range(1, 9))
+
+        n = len(values)
+        if n < 2:
+            return {"error": "数据点不足"}
+
+        # I 图 (单值)
+        xbar = values
+        mr = [abs(xbar[i] - xbar[i - 1]) for i in range(1, n)]
+        mr_bar = np.mean(mr) if mr else 0
+        d2 = 1.128  # n=2 时的 d2
+        sigma_within = mr_bar / d2 if mr_bar else 0
+
+        center_x = np.mean(xbar)
+        ucl_x = center_x + 3 * sigma_within
+        lcl_x = center_x - 3 * sigma_within
+
+        # MR 图
+        ucl_r = 3.267 * mr_bar
+        lcl_r = 0
+        center_r = mr_bar
+
+        # 判异规则 (与原有逻辑一致)
+        point_rules = [set() for _ in range(n)]
+        point_rules_r = [set() for _ in range(n - 1)]
+
+        # 规则1：超出3σ
+        if 1 in rules_active:
+            for i, v in enumerate(xbar):
+                if v > ucl_x or v < lcl_x:
+                    point_rules[i].add(1)
+            for i, v in enumerate(mr):
+                if v > ucl_r or v < lcl_r:
+                    point_rules_r[i].add(1)
+
+        # 规则2：连续9点同侧
+        if 2 in rules_active:
+            side, cnt, start = None, 0, 0
+            for i, v in enumerate(xbar):
+                new_side = 1 if v > center_x else (0 if v < center_x else -1)
+                if new_side == side and new_side != -1:
+                    cnt += 1
+                else:
+                    side, cnt, start = new_side, 1, i
+                if cnt >= 9:
+                    for j in range(start, i + 1):
+                        point_rules[j].add(2)
+                    side, cnt = None, 0
+
+        # 规则3：连续6点递增或递减
+        if 3 in rules_active:
+            for i in range(n - 5):
+                if all(xbar[i + j] < xbar[i + j + 1] for j in range(5)):
+                    for j in range(i, i + 6):
+                        point_rules[j].add(3)
+                if all(xbar[i + j] > xbar[i + j + 1] for j in range(5)):
+                    for j in range(i, i + 6):
+                        point_rules[j].add(3)
+
+        # 规则4：连续14点交替上下
+        if 4 in rules_active:
+            for i in range(n - 13):
+                if all((xbar[i + j] - xbar[i + j + 1]) * (xbar[i + j + 1] - xbar[i + j + 2]) < 0 for j in range(12)):
+                    for j in range(i, i + 14):
+                        point_rules[j].add(4)
+
+        # 规则5：连续3点中有2点在2σ外
+        if 5 in rules_active:
+            s2u = center_x + 2 * sigma_within
+            s2l = center_x - 2 * sigma_within
+            for i in range(n - 2):
+                w = xbar[i:i + 3]
+                if sum(1 for v in w if v > s2u) >= 2:
+                    for j in range(i, i + 3):
+                        point_rules[j].add(5)
+                if sum(1 for v in w if v < s2l) >= 2:
+                    for j in range(i, i + 3):
+                        point_rules[j].add(5)
+
+        # 规则6：连续5点中有4点在1σ外
+        if 6 in rules_active:
+            s1u = center_x + sigma_within
+            s1l = center_x - sigma_within
+            for i in range(n - 4):
+                w = xbar[i:i + 5]
+                if sum(1 for v in w if v > s1u) >= 4:
+                    for j in range(i, i + 5):
+                        point_rules[j].add(6)
+                if sum(1 for v in w if v < s1l) >= 4:
+                    for j in range(i, i + 5):
+                        point_rules[j].add(6)
+
+        # 规则7：连续15点在1σ内
+        if 7 in rules_active:
+            s1u = center_x + sigma_within
+            s1l = center_x - sigma_within
+            for i in range(n - 14):
+                if all(s1l <= xbar[i + j] <= s1u for j in range(15)):
+                    for j in range(i, i + 15):
+                        point_rules[j].add(7)
+
+        # 规则8：连续8点在1σ外
+        if 8 in rules_active:
+            s1u = center_x + sigma_within
+            s1l = center_x - sigma_within
+            for i in range(n - 7):
+                if all(v > s1u or v < s1l for v in xbar[i:i + 8]):
+                    for j in range(i, i + 8):
+                        point_rules[j].add(8)
+
+        # 汇总报警信息
+        violations = []
+        for i, rs in enumerate(point_rules):
+            if rs:
+                violations.append(f"批次{i + 1} 值={xbar[i]:.4f} 违反规则{','.join(map(str, sorted(rs)))}")
+        for i, rs in enumerate(point_rules_r):
+            if rs:
+                violations.append(f"MR点{i + 1} 值={mr[i]:.4f} 超出控制限")
+
+        # 计算 cpk（无规格限时跳过）
+        cpk = None
+        # 可选计算整体标准差
+        std_total = np.std(xbar, ddof=1) if n > 1 else 0
+        return {
+            'xbar': [round(v, 4) for v in xbar],
+            'mr': [round(v, 4) for v in mr],
+            'ucl_x': round(ucl_x, 4),
+            'lcl_x': round(lcl_x, 4),
+            'cl_x': round(center_x, 4),
+            'ucl_r': round(ucl_r, 4),
+            'lcl_r': round(lcl_r, 4),
+            'cl_r': round(center_r, 4),
+            'alarm_x': [i for i, rs in enumerate(point_rules) if rs],
+            'alarm_r': [i for i, rs in enumerate(point_rules_r) if rs],
+            'rules_violations': violations,
+            'mean': round(center_x, 4),
+            'std': round(std_total, 6),
+            'cpk': cpk,
+            'values': [round(v, 4) for v in values]
+        }

@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}影响因素控制图 - 按品项监控{% endblock %}
+
+{% block extra_css %}
+<style>
+    .global-controls { background: #fff; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .rule-bar { background: #f8f9fa; border-radius: 8px; padding: 0.5rem 1rem; margin: 0.5rem 0; display: flex; flex-wrap: wrap; align-items: center; }
+    .ctq-card { border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 1.5rem; overflow: hidden; }
+    .ctq-header { background: #f1f5f9; padding: 0.75rem 1rem; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        padding: 1rem;
+    }
+    .feature-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        overflow: hidden;
+    }
+    .feature-card .card-header {
+        background: #f8fafc;
+        padding: 0.5rem 0.75rem;
+        font-weight: 500;
+        border-bottom: 1px solid #e2e8f0;
+        color: #2563eb;
+    }
+    .feature-card .card-body {
+        padding: 0.5rem;
+    }
+    .chart-container { height: 320px; width: 100%; }
+    .advice-text { font-size: 0.75rem; color: #64748b; padding: 0.5rem 0.75rem; border-top: 1px solid #f0f0f0; }
+    .tab-content { padding-top: 1rem; }
+    .nav-tabs .nav-link { font-weight: 500; }
+    .loading-spinner { text-align: center; padding: 2rem; }
+    @media (max-width: 768px) {
+        .feature-grid { grid-template-columns: 1fr; }
+        .chart-container { height: 250px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="fa fa-line-chart me-2" style="color: var(--primary);"></i>影响因素控制图（按品项）</h4>
+    <small class="text-muted">监控每个品项下 CTQ 关联的所有输入特征稳定性</small>
+</div>
+
+<div class="global-controls">
+    <div class="row align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">起始日期</label>
+            <input type="date" id="globalStartDate" class="form-control">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">结束日期</label>
+            <input type="date" id="globalEndDate" class="form-control">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">判异规则</label>
+            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#ruleCollapse">规则配置</button>
+        </div>
+        <div class="col-md-3">
+            <button id="refreshAllBtn" class="btn btn-primary w-100"><i class="fa fa-refresh"></i> 刷新所有图表</button>
+        </div>
+    </div>
+    <div class="collapse mt-2" id="ruleCollapse">
+        <div class="card card-body rule-bar">
+            <div class="form-check form-check-inline"><input class="form-check-input rule-check" type="checkbox" value="1" checked><label>1.超出3σ</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input rule-check" type="checkbox" value="2" checked><label>2.连续9点同侧</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input rule-check" type="checkbox" value="3" checked><label>3.连续6点升降</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input rule-check" type="checkbox" value="4" checked><label>4.连续14点交替</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input rule-check" type="checkbox" value="5" checked><label>5.3点中2点在2σ外</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input rule-check" type="checkbox" value="6" checked><label>6.5点中4点在1σ外</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input rule-check" type="checkbox" value="7" checked><label>7.连续15点在1σ内</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input rule-check" type="checkbox" value="8" checked><label>8.连续8点在1σ外</label></div>
+            <button class="btn btn-sm btn-outline-secondary ms-2" id="resetRulesBtn">全选</button>
+        </div>
+    </div>
+</div>
+
+<ul class="nav nav-tabs" id="productTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab_all" type="button" role="tab">全部品项</button>
+    </li>
+    {% for item in product_items %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab_{{ loop.index }}" type="button" role="tab" data-product="{{ item }}">{{ item }}</button>
+    </li>
+    {% endfor %}
+</ul>
+
+<div class="tab-content" id="productTabContent">
+    <div class="tab-pane fade show active" id="tab_all" role="tabpanel">
+        <div class="alert alert-info mt-2">请选择一个具体品项查看控制图（全部品项暂不支持）</div>
+    </div>
+    {% for item in product_items %}
+    <div class="tab-pane fade" id="tab_{{ loop.index }}" role="tabpanel" data-product="{{ item }}">
+        <div id="loading_{{ loop.index }}" class="loading-spinner" style="display: none;">
+            <i class="fa fa-spinner fa-spin fa-2x"></i> 加载中...
+        </div>
+        <div id="content_{{ loop.index }}" class="mt-3"></div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='lib/echarts/echarts.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/feature_spc_batch.js') }}"></script>
+{% endblock %}
